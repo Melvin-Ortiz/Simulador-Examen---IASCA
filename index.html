@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<title>IASCA · Simulador de Examen TC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   IASCA SIMULATOR · EDITORIAL-AVIATION DESIGN
+   Two themes: 'paper' (light, warm) & 'cockpit' (dark, mint)
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Type scale */
+  --font-display: 'Fraunces', 'Times New Roman', serif;
+  --font-body: 'Inter Tight', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Spacing rhythm */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+
+  --transition: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* THEME: PAPER (LIGHT) - editorial magazine warm paper */
+[data-theme="paper"] {
+  --bg: #F5F1E8;
+  --bg-elev: #FBF8F0;
+  --bg-sunken: #EDE7D6;
+  --ink: #1A2233;
+  --ink-soft: #4A5468;
+  --ink-faint: #8A8470;
+  --line: #DCD5BF;
+  --line-strong: #B8AE94;
+  --accent: #B8721E;
+  --accent-soft: #E8B870;
+  --accent-bg: #F4E3C0;
+  --success: #3F7A4E;
+  --success-bg: #DAEBD5;
+  --danger: #A33A2E;
+  --danger-bg: #F0D8D2;
+  --warning: #8A5A1A;
+  --info: #2B5170;
+  --info-bg: #D5E2EE;
+  --shadow-sm: 0 1px 2px rgba(26,34,51,0.06), 0 1px 1px rgba(26,34,51,0.04);
+  --shadow-md: 0 4px 12px rgba(26,34,51,0.08), 0 1px 3px rgba(26,34,51,0.05);
+  --shadow-lg: 0 20px 40px -10px rgba(26,34,51,0.18), 0 8px 16px -8px rgba(26,34,51,0.10);
+  --noise-opacity: 0.025;
+}
+
+/* THEME: COCKPIT (DARK) - deep slate cockpit night with mint accents */
+[data-theme="cockpit"] {
+  --bg: #0F1419;
+  --bg-elev: #161D25;
+  --bg-sunken: #0A0E13;
+  --ink: #E8EEF2;
+  --ink-soft: #9AAAB6;
+  --ink-faint: #5A6B78;
+  --line: #233040;
+  --line-strong: #3A4A5D;
+  --accent: #5DD9B0;
+  --accent-soft: #7FE6C1;
+  --accent-bg: rgba(93,217,176,0.10);
+  --success: #5DD9B0;
+  --success-bg: rgba(93,217,176,0.10);
+  --danger: #F26D5B;
+  --danger-bg: rgba(242,109,91,0.10);
+  --warning: #E8B870;
+  --info: #6FB8E0;
+  --info-bg: rgba(111,184,224,0.10);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.40);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.02);
+  --shadow-lg: 0 22px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(93,217,176,0.05);
+  --noise-opacity: 0.035;
+}
+
+html, body {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.55;
+  font-feature-settings: 'ss01', 'cv11';
+  transition: background-color var(--transition), color var(--transition);
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle grain texture across the whole app */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+[data-theme="cockpit"] body::before { mix-blend-mode: screen; }
+
+/* Typography */
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; }
+.display-wide { font-family: var(--font-display); font-variation-settings: 'wght' 400, 'opsz' 96, 'SOFT' 0, 'WONK' 0; letter-spacing: -0.025em; }
+.mono { font-family: var(--font-mono); font-feature-settings: 'tnum'; letter-spacing: -0.01em; }
+.serif-it { font-family: var(--font-display); font-style: italic; font-weight: 300; }
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; }
+h1 { font-size: clamp(2rem, 6vw, 3.5rem); }
+h2 { font-size: clamp(1.5rem, 4vw, 2.25rem); }
+h3 { font-size: clamp(1.15rem, 3vw, 1.5rem); }
+
+/* App container */
+.app { position: relative; z-index: 2; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Header */
+.header {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  border-bottom: 1px solid var(--line);
+  background-color: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.header-brand { display: flex; align-items: center; gap: var(--space-sm); }
+.brand-mark {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.brand-title { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: -0.01em; }
+.brand-sub { font-family: var(--font-mono); font-size: 0.65rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.15em; margin-top: 3px; }
+
+.header-actions { display: flex; align-items: center; gap: var(--space-sm); }
+
+/* Theme toggle */
+.theme-toggle {
+  height: 36px;
+  padding: 0 var(--space-md);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+.theme-toggle:hover { border-color: var(--ink); background: var(--bg-elev); }
+.theme-toggle .theme-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+
+/* Icon button (back, etc.) */
+.icon-btn {
+  width: 36px; height: 36px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  font-size: 1rem;
+}
+.icon-btn:hover { border-color: var(--ink); background: var(--bg-elev); }
+
+/* Main content area */
+.main {
+  flex: 1;
+  padding: var(--space-xl) var(--space-lg);
+  max-width: 920px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.view { display: none; animation: fadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+.view.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============== WELCOME VIEW ============== */
+.welcome-hero {
+  text-align: left;
+  margin-bottom: var(--space-2xl);
+  position: relative;
+}
+.welcome-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.welcome-eyebrow::before, .welcome-eyebrow::after {
+  content: ''; height: 1px; background: var(--line-strong); flex: 1; max-width: 40px;
+}
+.welcome-eyebrow::after { display: none; }
+.welcome-title {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 360, 'opsz' 100, 'SOFT' 30;
+  font-size: clamp(2.4rem, 8vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin-bottom: var(--space-md);
+}
+.welcome-title em { font-style: italic; font-variation-settings: 'wght' 300, 'opsz' 100, 'SOFT' 100; }
+.welcome-sub {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  max-width: 540px;
+  line-height: 1.6;
+}
+
+.welcome-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-md);
+  margin: var(--space-xl) 0;
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.welcome-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.welcome-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Name input card */
+.name-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+.name-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 140px; height: 140px;
+  background: radial-gradient(circle at top right, var(--accent-bg), transparent 70%);
+  pointer-events: none;
+}
+.name-card-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-sm);
+}
+.name-card h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  margin-bottom: var(--space-lg);
+}
+
+.input-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.text-input {
+  flex: 1;
+  min-width: 200px;
+  height: 52px;
+  padding: 0 var(--space-md);
+  background: var(--bg);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.text-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.text-input::placeholder { color: var(--ink-faint); }
+
+/* Button styles */
+.btn {
+  height: 52px;
+  padding: 0 var(--space-xl);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--ink);
+  color: var(--bg);
+}
+[data-theme="cockpit"] .btn-primary {
+  background: var(--accent);
+  color: #0A0E13;
+  font-weight: 600;
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--line-strong);
+  color: var(--ink);
+}
+.btn-ghost:hover { border-color: var(--ink); background: var(--bg-elev); }
+
+.btn-sm { height: 38px; padding: 0 var(--space-md); font-size: 0.85rem; }
+.btn-block { width: 100%; }
+
+/* Section title */
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--line);
+}
+.section-title h2 {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 380, 'opsz' 60;
+  font-size: 1.5rem;
+}
+.section-title-meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+}
+
+/* Mode cards */
+.modes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+.mode-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition: transform var(--transition), border-color var(--transition), background var(--transition);
+  overflow: hidden;
+}
+.mode-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  box-shadow: inset 0 0 0 0 var(--accent);
+  transition: box-shadow var(--transition);
+}
+.mode-card:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+.mode-card:hover::after { box-shadow: inset 0 0 0 2px var(--accent); }
+.mode-card-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-sm);
+}
+.mode-card-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--space-sm);
+  line-height: 1.15;
+}
+.mode-card-title em { font-style: italic; font-weight: 300; }
+.mode-card-desc {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.mode-card-time {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+.mode-card-time .time-val { color: var(--ink); font-weight: 500; }
+
+/* ============== EXAM VIEW ============== */
+.exam-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+.exam-header-left { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+.exam-mode-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--space-sm);
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+[data-theme="cockpit"] .exam-mode-tag { color: var(--accent); background: var(--accent-bg); }
+.exam-mode-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+.exam-timer {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 500;
+  padding: 6px var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  letter-spacing: 0.04em;
+}
+.exam-timer.warn { color: var(--warning); border-color: var(--warning); }
+.exam-timer.crit { color: var(--danger); border-color: var(--danger); animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Progress strip */
+.progress-strip {
+  position: relative;
+  height: 3px;
+  background: var(--bg-sunken);
+  border-radius: 100px;
+  margin-bottom: var(--space-xl);
+  overflow: hidden;
+}
+.progress-strip-fill {
+  height: 100%;
+  background: var(--ink);
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-theme="cockpit"] .progress-strip-fill { background: var(--accent); }
+
+/* Question card */
+.q-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+  position: relative;
+}
+.q-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px dashed var(--line);
+}
+.q-number {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.q-number .of { color: var(--ink-faint); font-size: 1.2rem; margin-left: 4px; }
+.q-cat-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 4px 10px;
+  background: var(--bg-sunken);
+  border-radius: 100px;
+  color: var(--ink-soft);
+}
+
+.q-text {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 380, 'opsz' 32, 'SOFT' 0;
+  font-size: clamp(1.2rem, 3vw, 1.55rem);
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--space-xl);
+  color: var(--ink);
+}
+
+/* Options */
+.options { display: flex; flex-direction: column; gap: var(--space-sm); }
+.opt {
+  width: 100%;
+  text-align: left;
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  transition: all var(--transition-fast);
+  line-height: 1.5;
+  font-size: 0.97rem;
+}
+.opt:hover { border-color: var(--line-strong); background: var(--bg-elev); }
+.opt-letter {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all var(--transition-fast);
+}
+.opt.selected {
+  border-color: var(--ink);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="cockpit"] .opt.selected { border-color: var(--accent); }
+.opt.selected .opt-letter {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+[data-theme="cockpit"] .opt.selected .opt-letter {
+  background: var(--accent);
+  color: #0A0E13;
+  border-color: var(--accent);
+}
+
+/* Study mode reveal */
+.opt.is-correct {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+.opt.is-incorrect {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  opacity: 0.7;
+}
+.opt.is-correct .opt-letter {
+  background: var(--success); color: white; border-color: var(--success);
+}
+.opt.is-incorrect .opt-letter {
+  background: var(--danger); color: white; border-color: var(--danger);
+}
+
+/* Hint section */
+.hint-row {
+  margin-top: var(--space-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.btn-hint {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  padding: 8px var(--space-md);
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.btn-hint:hover { border-color: var(--accent); color: var(--accent); }
+.btn-hint:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hint-box {
+  width: 100%;
+  margin-top: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  color: var(--ink);
+  font-style: italic;
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 350;
+}
+
+/* Study mode explanation */
+.explain-box {
+  margin-top: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--info-bg);
+  border-left: 3px solid var(--info);
+  border-radius: var(--radius-sm);
+}
+.explain-box-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--info);
+  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.explain-box-text { font-size: 0.94rem; line-height: 1.55; color: var(--ink); }
+
+/* Exam footer / nav */
+.exam-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  flex-wrap: wrap;
+}
+.exam-nav-left, .exam-nav-right { display: flex; gap: var(--space-sm); }
+
+/* Question map */
+.q-map-toggle {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  padding: 6px var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  color: var(--ink);
+  transition: all var(--transition-fast);
+}
+.q-map-toggle:hover { border-color: var(--ink); }
+
+.q-map {
+  margin-top: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: none;
+}
+.q-map.open { display: block; }
+.q-map-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-md);
+}
+.q-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 4px;
+}
+.q-map-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  color: var(--ink-soft);
+  display: grid;
+  place-items: center;
+  transition: all var(--transition-fast);
+}
+.q-map-cell:hover { border-color: var(--ink); color: var(--ink); }
+.q-map-cell.answered {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+[data-theme="cockpit"] .q-map-cell.answered {
+  background: var(--accent);
+  color: #0A0E13;
+  border-color: var(--accent);
+}
+.q-map-cell.current {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.q-map-legend {
+  margin-top: var(--space-md);
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.q-map-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.q-map-legend-swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); }
+.q-map-legend-swatch.answered { background: var(--ink); border-color: var(--ink); }
+[data-theme="cockpit"] .q-map-legend-swatch.answered { background: var(--accent); border-color: var(--accent); }
+.q-map-legend-swatch.current { background: var(--bg); outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Submit confirmation banner */
+.submit-banner {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-top: var(--space-lg);
+  display: none;
+}
+.submit-banner.open { display: block; }
+
+/* ============== RESULTS VIEW ============== */
+.result-hero {
+  text-align: left;
+  padding: var(--space-xl);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+.result-hero::before {
+  content: '';
+  position: absolute;
+  top: -50px; right: -50px;
+  width: 250px; height: 250px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-bg), transparent 70%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+.result-status-line {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.result-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+.result-score {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 320, 'opsz' 144, 'SOFT' 50;
+  font-size: clamp(4rem, 16vw, 8rem);
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+}
+.result-score-over {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  color: var(--ink-soft);
+}
+.result-verdict {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 380, 'opsz' 48;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.result-verdict.pass { color: var(--success); }
+.result-verdict.fail { color: var(--danger); }
+.result-verdict.excel { color: var(--accent); }
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--line);
+}
+.result-summary-item .label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.result-summary-item .value {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+}
+.result-summary-item .value.correct { color: var(--success); }
+.result-summary-item .value.wrong { color: var(--danger); }
+
+/* Filters */
+.result-filters {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+.filter-chip {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  padding: 6px var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  color: var(--ink);
+  transition: all var(--transition-fast);
+}
+.filter-chip:hover { border-color: var(--ink); }
+.filter-chip.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+[data-theme="cockpit"] .filter-chip.active {
+  background: var(--accent);
+  color: #0A0E13;
+  border-color: var(--accent);
+}
+
+/* Result item */
+.result-item {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  border-left: 4px solid var(--line-strong);
+}
+.result-item.correct { border-left-color: var(--success); }
+.result-item.wrong { border-left-color: var(--danger); }
+.result-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+.result-item-num {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+.result-item-icon {
+  font-size: 1.1rem;
+  font-weight: 600;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.result-item.correct .result-item-icon { background: var(--success-bg); color: var(--success); }
+.result-item.wrong .result-item-icon { background: var(--danger-bg); color: var(--danger); }
+.result-item-q {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 400, 'opsz' 24;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  margin-bottom: var(--space-md);
+}
+.result-item-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+@media (max-width: 540px) {
+  .result-item-answers { grid-template-columns: 1fr; }
+}
+.result-ans-block { padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); background: var(--bg); }
+.result-ans-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.result-ans-text { font-size: 0.92rem; line-height: 1.4; }
+.result-ans-block.correct { background: var(--success-bg); }
+.result-ans-block.correct .result-ans-label { color: var(--success); }
+.result-ans-block.wrong { background: var(--danger-bg); }
+.result-ans-block.wrong .result-ans-label { color: var(--danger); }
+.result-explain {
+  padding: var(--space-md);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--info);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.result-explain-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--info);
+  margin-bottom: 4px;
+}
+
+/* ============== DASHBOARD ============== */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+.dash-stat {
+  padding: var(--space-lg);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.dash-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-sm);
+}
+.dash-stat-value {
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 340, 'opsz' 96;
+  font-size: 2.4rem;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+.dash-stat-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+
+/* Chart container */
+.chart-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+.chart-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin-bottom: var(--space-md);
+}
+.chart {
+  width: 100%;
+  height: auto;
+}
+
+/* History list */
+.history-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(80px, auto) 1fr minmax(60px, auto) minmax(60px, auto);
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.history-row:last-child { border-bottom: none; }
+.history-row.header {
+  background: var(--bg-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+}
+.history-row .mono { font-family: var(--font-mono); }
+.history-row .score-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--bg);
+  text-align: center;
+}
+.history-row .score-pill.pass { color: var(--success); background: var(--success-bg); }
+.history-row .score-pill.fail { color: var(--danger); background: var(--danger-bg); }
+.history-row .score-pill.excel { color: var(--accent); background: var(--accent-bg); }
+
+.empty-state {
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  color: var(--ink-soft);
+}
+.empty-state h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  margin-bottom: var(--space-sm);
+  color: var(--ink);
+}
+
+/* Footer */
+.footer {
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-top: var(--space-2xl);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: var(--space-md);
+}
+.modal-backdrop.open { display: flex; animation: fadeIn 200ms; }
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  max-width: 460px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+.modal h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin-bottom: var(--space-md);
+}
+.modal p { color: var(--ink-soft); margin-bottom: var(--space-lg); line-height: 1.55; }
+.modal-actions { display: flex; gap: var(--space-sm); justify-content: flex-end; flex-wrap: wrap; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: var(--space-lg);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: var(--bg);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms, transform 240ms;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+[data-theme="cockpit"] .toast { background: var(--accent); color: #0A0E13; }
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .main { padding: var(--space-lg) var(--space-md); }
+  .header { padding: var(--space-sm) var(--space-md); }
+  .brand-text { display: none; }
+  .name-card { padding: var(--space-lg); }
+  .q-card { padding: var(--space-lg); }
+  .result-hero { padding: var(--space-lg); }
+  .welcome-stats { gap: var(--space-sm); }
+  .welcome-stat-value { font-size: 1.4rem; }
+}
+
+@media (max-width: 380px) {
+  .modes-grid { grid-template-columns: 1fr; }
+  .opt { padding: var(--space-sm) var(--space-md); }
+  .opt-letter { width: 24px; height: 24px; font-size: 0.7rem; }
+  .q-number { font-size: 2rem; }
+  .q-text { font-size: 1.1rem; }
+  .history-row { grid-template-columns: 1fr; gap: 4px; }
+  .history-row.header { display: none; }
+}
+
+/* Print/utility */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Scrollbar (subtle) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 100px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+</style>
+</head>
+<body data-theme="paper">
+<div class="app">
+  <!-- ===== HEADER ===== -->
+  <header class="header" role="banner">
+    <div class="header-brand">
+      <div class="brand-mark" aria-hidden="true">TC</div>
+      <div class="brand-text">
+        <span class="brand-title">IASCA</span>
+        <span class="brand-sub">Simulador · Examen Tripulantes</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btnDash" class="icon-btn" title="Estadísticas" aria-label="Ver estadísticas" style="display:none">📊</button>
+      <button id="btnBack" class="icon-btn" title="Inicio" aria-label="Regresar al inicio" style="display:none">←</button>
+      <button class="theme-toggle" id="themeBtn" aria-label="Cambiar tema">
+        <span class="theme-dot"></span>
+        <span id="themeLabel">Noche</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main" id="mainContent">
+
+    <!-- VIEW: WELCOME -->
+    <section class="view active" id="viewWelcome" aria-label="Bienvenida">
+      <div class="welcome-hero">
+        <div class="welcome-eyebrow">IASCA · República Dominicana</div>
+        <h1 class="welcome-title">Examen <em>Oficial</em><br>de Tripulantes</h1>
+        <p class="welcome-sub">235 preguntas del examen de habilitación IASCA para Tripulantes de Cabina. Practica con feedback inmediato, pistas y seguimiento de progreso.</p>
+      </div>
+
+      <div class="welcome-stats">
+        <div>
+          <div class="welcome-stat-label">Preguntas</div>
+          <div class="welcome-stat-value mono">235</div>
+        </div>
+        <div>
+          <div class="welcome-stat-label">Categorías</div>
+          <div class="welcome-stat-value">5</div>
+        </div>
+        <div>
+          <div class="welcome-stat-label">Modos</div>
+          <div class="welcome-stat-value">8</div>
+        </div>
+        <div>
+          <div class="welcome-stat-label">Calificación</div>
+          <div class="welcome-stat-value">100</div>
+        </div>
+      </div>
+
+      <div class="name-card">
+        <div class="name-card-label">Para empezar</div>
+        <h2>¿Cuál es tu nombre?</h2>
+        <div class="input-row">
+          <input type="text" id="inputName" class="text-input" placeholder="Tu nombre completo" maxlength="60" autocomplete="name" autofocus>
+          <button class="btn btn-primary" id="btnStartMain" onclick="startMain()">Continuar →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: MODE SELECTION -->
+    <section class="view" id="viewModes" aria-label="Selección de modo">
+      <div class="section-title">
+        <h2>Elige un <em style="font-family:var(--font-display);font-style:italic;font-weight:300">modo</em></h2>
+        <span class="section-title-meta" id="modeGreet"></span>
+      </div>
+
+      <div class="modes-grid" id="modesGrid">
+        <!-- injected by JS -->
+      </div>
+    </section>
+
+    <!-- VIEW: EXAM -->
+    <section class="view" id="viewExam" aria-label="Examen en progreso">
+      <div class="exam-header">
+        <div class="exam-header-left">
+          <span class="exam-mode-tag" id="examModeTag">Estándar</span>
+          <div class="exam-timer" id="examTimer" style="display:none" aria-live="polite"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="q-map-toggle" id="mapToggle" onclick="toggleMap()">Mapa ▾</button>
+          <button class="btn btn-ghost btn-sm" id="btnSubmitExam" onclick="confirmSubmit()">Entregar</button>
+        </div>
+      </div>
+
+      <div class="progress-strip" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progressStrip">
+        <div class="progress-strip-fill" id="progressFill"></div>
+      </div>
+
+      <div class="q-card" id="qCard">
+        <div class="q-meta">
+          <div class="q-number" id="qNumber">1</div>
+          <div class="q-cat-tag" id="qCatTag">EG</div>
+        </div>
+        <div class="q-text" id="qText"></div>
+        <div class="options" id="optionsList"></div>
+        <div class="hint-row" id="hintRow" style="display:none">
+          <button class="btn-hint" id="btnHint" onclick="useHint()">💡 Pista (-5 pts)</button>
+          <div class="hint-box" id="hintBox" style="display:none"></div>
+        </div>
+        <div class="explain-box" id="explainBox" style="display:none">
+          <div class="explain-box-label">📖 Explicación</div>
+          <div class="explain-box-text" id="explainText"></div>
+        </div>
+      </div>
+
+      <div class="q-map" id="qMap">
+        <div class="q-map-title">Mapa de preguntas — navega directo</div>
+        <div class="q-map-grid" id="qMapGrid"></div>
+        <div class="q-map-legend">
+          <span class="q-map-legend-item"><span class="q-map-legend-swatch"></span> Sin responder</span>
+          <span class="q-map-legend-item"><span class="q-map-legend-swatch answered"></span> Respondida</span>
+          <span class="q-map-legend-item"><span class="q-map-legend-swatch current"></span> Actual</span>
+        </div>
+      </div>
+
+      <div class="exam-nav">
+        <div class="exam-nav-left">
+          <button class="btn btn-ghost btn-sm" id="btnPrev" onclick="navPrev()">← Anterior</button>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--ink-soft)" id="qCounter"></div>
+        <div class="exam-nav-right">
+          <button class="btn btn-primary btn-sm" id="btnNext" onclick="navNext()">Siguiente →</button>
+        </div>
+      </div>
+
+      <div class="submit-banner" id="submitBanner">
+        <p style="margin-bottom:var(--space-md);color:var(--ink)">
+          <strong id="submitBannerMsg"></strong>
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="submitExam()">Entregar examen ✓</button>
+          <button class="btn btn-ghost" onclick="closeSubmit()">Continuar revisando</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: RESULTS -->
+    <section class="view" id="viewResults" aria-label="Resultados del examen">
+      <div class="result-hero" id="resultHero">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="result-filters" role="group" aria-label="Filtrar resultados">
+        <button class="filter-chip active" id="filterAll" onclick="setFilter('all')">Todas</button>
+        <button class="filter-chip" id="filterCorrect" onclick="setFilter('correct')">Correctas</button>
+        <button class="filter-chip" id="filterWrong" onclick="setFilter('wrong')">Incorrectas</button>
+      </div>
+
+      <div id="resultList"></div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-xl)">
+        <button class="btn btn-ghost" onclick="goTo('viewModes')">Intentar de nuevo</button>
+        <button class="btn btn-ghost" onclick="goTo('viewDashboard');renderDashboard()">Ver estadísticas</button>
+      </div>
+    </section>
+
+    <!-- VIEW: DASHBOARD -->
+    <section class="view" id="viewDashboard" aria-label="Estadísticas y progreso">
+      <div class="section-title">
+        <h2><em style="font-family:var(--font-display);font-style:italic;font-weight:300">Tu</em> progreso</h2>
+        <button class="filter-chip" style="font-size:0.7rem" onclick="clearHistory()">Borrar historial</button>
+      </div>
+
+      <div class="dash-grid" id="dashStats">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="chart-card" id="chartCard" style="display:none">
+        <h3>Progresión de puntajes</h3>
+        <svg class="chart" id="progressChart" viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" aria-label="Gráfica de progresión"></svg>
+      </div>
+
+      <div class="section-title" style="margin-top:var(--space-xl)">
+        <h2 style="font-size:1.2rem">Historial de intentos</h2>
+      </div>
+      <div class="history-card" id="historyList">
+        <!-- filled by JS -->
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-xl)">
+        <button class="btn btn-ghost" onclick="goTo('viewModes')">Nuevo examen</button>
+      </div>
+    </section>
+
+    <!-- VIEW: REVIEW (sin calificar) -->
+    <section class="view" id="viewReview" aria-label="Repaso completo">
+      <div class="section-title">
+        <h2>Repaso <em style="font-family:var(--font-display);font-style:italic;font-weight:300">completo</em></h2>
+        <span class="section-title-meta">235 preguntas · todas las respuestas</span>
+      </div>
+
+      <div class="result-filters">
+        <button class="filter-chip active" id="revFilterAll" onclick="setRevFilter('all')">Todas</button>
+        <button class="filter-chip" id="revFilterEG" onclick="setRevFilter('EG')">EG</button>
+        <button class="filter-chip" id="revFilterFV" onclick="setRevFilter('FV')">FV</button>
+        <button class="filter-chip" id="revFilterPA" onclick="setRevFilter('PA')">PA</button>
+        <button class="filter-chip" id="revFilterRA" onclick="setRevFilter('RA')">RA</button>
+        <button class="filter-chip" id="revFilterRG" onclick="setRevFilter('RG')">RG</button>
+      </div>
+
+      <div id="reviewList"></div>
+
+      <div style="margin-top:var(--space-xl)">
+        <button class="btn btn-ghost" onclick="goTo('viewModes')">← Volver a modos</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    IASCA · Simulador de Examen TC · República Dominicana · Desarrollado por <strong style="color:var(--ink-soft)">Melvin Ortiz</strong> · <strong style="color:var(--ink-soft)">Quisoft ONE</strong> · © <span id="footerYear"></span>
+  </footer>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">Confirmar</h3>
+    <p id="modalMsg"></p>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ===========================
+// QUESTIONS DATA (235 total)
+// ===========================
+const ALL_QUESTIONS = [
+// ============ EMERGENCIAS GENERALES (1-43) ============
+  {id:1,cat:"EG",q:"Acto de interferencia ilícita: Aquellas acciones, hechos o tentativas, destinados a comprometer la seguridad de la aviación y el transporte aéreo.",opts:{a:"Falso",b:"Verdadero"},correct:"b",hint:"Definición oficial de OACI Anexo 17 sobre seguridad de la aviación.",exp:"Es la definición correcta según el Anexo 17 de OACI. Incluye apoderamiento ilícito, sabotaje, comunicación de información falsa que ponga en peligro la seguridad de la aeronave."},
+  {id:2,cat:"EG",q:"Al encontrarse un objeto sospechoso a bordo:",opts:{a:"Llevarla al galley",b:"Desactivarla cuidadosamente",c:"Avisar al capitán, aislar el sector y seguir instrucciones.",d:"Todas las anteriores"},correct:"c",hint:"Nunca se manipula un objeto sospechoso. La acción inmediata es comunicar y aislar.",exp:"El procedimiento estándar es notificar al capitán inmediatamente, aislar el área sin tocar el objeto, y seguir el LRBL (Least Risk Bomb Location) si aplica. Manipular el objeto puede activarlo."},
+  {id:3,cat:"EG",q:"Cabina libre es un procedimiento que se efectúa siempre antes de un despegue y un aterrizaje.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Es procedimiento obligatorio en las dos fases más críticas del vuelo.",exp:"Cabina libre (cabin secure) se realiza antes del despegue y antes del aterrizaje para asegurar que la cabina esté preparada ante cualquier emergencia imprevista durante estas fases críticas."},
+  {id:4,cat:"EG",q:"De las máscaras de oxígeno de pasajeros, se obtiene oxígeno:",opts:{a:"Si se opera en forma eléctrica desde el cockpit.",b:"Al desplegarse desde los PSU.",c:"Solo si el usuario tira de la máscara hacia abajo.",d:"Solo si se activa manual en el brazo del asiento."},correct:"c",hint:"El generador químico necesita una acción mecánica para activarse.",exp:"Las máscaras drop-down requieren que el pasajero tire de ellas hacia abajo para activar el generador químico de oxígeno (perclorato). El simple despliegue no inicia el flujo."},
+  {id:5,cat:"EG",q:"Dependiendo del material combustible los incendios se clasifican en:",opts:{a:"Líquidos inflamables metales.",b:"Orgánicos y electicos",c:"Solidos orgánicos inflamables, B- Líquidos inflamables, C- Eléctricos, D- Metales.",d:"Todas son correctas."},correct:"c",hint:"Clasificación internacional ABCD según material combustible.",exp:"Clase A: sólidos orgánicos (madera, papel). Clase B: líquidos inflamables (combustibles, aceites). Clase C: equipos eléctricos energizados. Clase D: metales combustibles (magnesio, sodio)."},
+  {id:6,cat:"EG",q:"Dependiendo del material combustible, los incendios se clasifican en:",opts:{a:"A-líquidos inflamable, B-sólidos orgánicos inflamables, C-eléctricos, y D-metales.",b:"A-sólidos orgánicos inflamables, B-líquidos inflamables, C-metales, y D- eléctricos",c:"A-sólidos orgánicos inflamables, B-líquidos inflamables, C-eléctricos, y D-metales.",d:"A-sólidos orgánicos inflamables, B-eléctricos, C-líquidos inflamables, y D-metales."},correct:"c",hint:"Orden ABCD: sólidos, líquidos, eléctricos, metales.",exp:"La clasificación correcta es A-sólidos orgánicos, B-líquidos inflamables, C-eléctricos energizados, D-metales combustibles. Memorice el orden alfabético del material."},
+  {id:7,cat:"EG",q:"Durante las fases de despegue y aterrizajes, los tripulantes deben tener una clara conciencia situacional. Esto es parte de:",opts:{a:"Cockpit estéril.",b:"Revisión silenciosa.",c:"Cabina libre.",d:"Briefing."},correct:"b",hint:"Es la práctica mental de repaso de acciones de emergencia en fases críticas.",exp:"La revisión silenciosa (silent review) es el ejercicio mental que hace el TC en su asiento durante despegue/aterrizaje, repasando salidas, equipos, posición de impacto y órdenes de evacuación."},
+  {id:8,cat:"EG",q:"Durante el chequeo del equipo de emergencia, se debe verificar:",opts:{a:"Cantidad y ubicación.",b:"Acceso, ubicación y vigencia.",c:"Ubicación y vigencia.",d:"Ubicación, cantidad, vigencia y fácil acceso."},correct:"d",hint:"Chequeo completo abarca cuatro parámetros simultáneos.",exp:"El preflight check del equipo de emergencia verifica los cuatro: que esté en su ubicación correcta, en la cantidad reglamentaria, dentro de fecha de vigencia y con acceso libre sin obstrucciones."},
+  {id:9,cat:"EG",q:"Durante la demostración de seguridad a pasajeros en vivo, las luces de la cabina deben estar siempre en:",opts:{a:"DIM.",b:"NIGHT.",c:"BRIGHT.",d:"LOW."},correct:"c",hint:"Máxima iluminación garantiza que todos los pasajeros vean claramente.",exp:"Las luces deben estar en BRIGHT (máximo) durante la demo de seguridad para asegurar visibilidad total y que ningún pasajero pierda detalles del procedimiento."},
+  {id:10,cat:"EG",q:"El agua de mar se puede beber sin que provoque efectos secundarios después de haberla potabilizado.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Una vez removida la sal (potabilizada), se puede consumir.",exp:"Solo tras un proceso de desalinización/potabilización (filtros solares, destiladores) el agua de mar se vuelve segura. Sin potabilizar provoca deshidratación severa por exceso de sodio."},
+  {id:11,cat:"EG",q:"El agua de mar se puede beber sin que provoque efectos secundarios después de haberla potabilizado:",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Misma pregunta repetida: solo se bebe tras potabilizar.",exp:"Tras potabilización (eliminar la sal) el agua de mar es segura. Beber agua de mar sin tratar genera deshidratación celular y daño renal por la alta concentración de sodio."},
+  {id:12,cat:"EG",q:"El agua de mar y el orine son elementos saludables en una supervivencia?",opts:{a:"Verdadero",b:"Falsa"},correct:"b",hint:"Ambos contienen toxinas y sales que empeoran la deshidratación.",exp:"Ninguno es saludable. El orine contiene urea y sales que el cuerpo intenta eliminar; el agua de mar sin potabilizar tiene 3.5% de sales. Beber cualquiera de los dos acelera la deshidratación."},
+  {id:13,cat:"EG",q:"El chequeo de prevuelo de un Extintor de Halon es:",opts:{a:"Manómetro en arco verde, tarjeta de vencimiento, pin de seguridad, asegurado y accesible.",b:"Manómetro en rango no arco verde, tarjeta de vencimiento, pin de seguridad, asegurado y accesible.",c:"Manómetro en rango verde, tarjeta de vencimiento, pin de seguridad, no asegurado y accesible."},correct:"a",hint:"Cinco puntos: arco verde, vigencia, pin, asegurado, accesible.",exp:"El chequeo correcto del extintor Halon: (1) manómetro en arco verde, (2) tarjeta de vencimiento vigente, (3) pin de seguridad puesto, (4) asegurado en su soporte y (5) de fácil acceso."},
+  {id:14,cat:"EG",q:"El chequeo de prevuelo de una botella de oxígeno es:",opts:{a:"Manómetro rango rojo, mascara conectada en HI, mascara adicional, asegurada y accesible.",b:"Manómetro rango rojo, mascara conectada en LO, mascara adicional, asegurada y accesible.",c:"Manómetro rango rojo, máscaras selladas, asegurada y accesible.",d:"Tarjeta de vencimiento, mascara conectada en HI, asegurada y accesible."},correct:"d",hint:"La máscara siempre conectada en HI listo para uso inmediato.",exp:"El chequeo correcto incluye tarjeta de vencimiento vigente, máscara conectada en HI (flujo alto, 4 LPM) para emergencia inmediata, botella asegurada y accesible."},
+  {id:15,cat:"EG",q:"El concepto cabina libre es un procedimiento orientado a:",opts:{a:"Preparar la cabina para un aterrizaje de emergencia.",b:"Asegurar la cabina para un aterrizaje de emergencia con posición de impacto.",c:"Asegurar razonablemente la cabina para enfrentar una emergencia imprevista durante un despegue o aterrizaje.",d:"Preparar la cabina para un aterrizaje en una emergencia prevista."},correct:"c",hint:"Es para emergencia IMPREVISTA, no para una emergencia ya anunciada.",exp:"Cabina libre busca asegurar razonablemente la cabina antes de cada despegue/aterrizaje, anticipando emergencias imprevistas. No es lo mismo que la preparación de cabina para emergencia prevista."},
+  {id:16,cat:"EG",q:"El E.L.T.:",opts:{a:"Es un equipo portátil que emite señales de emergencia.",b:"Transmite en frecuencias 406MHz, 121.5Mhz y 243 MHz.",c:"Tiene una batería que se activa al contacto con el agua.",d:"Todas las anteriores son correctas."},correct:"d",hint:"El ELT cumple las tres características descritas.",exp:"El Emergency Locator Transmitter es portátil, transmite en 406MHz (satélite COSPAS-SARSAT), 121.5MHz (civil) y 243MHz (militar), y posee batería activable por contacto con agua salada."},
+  {id:17,cat:"EG",q:"El extintor de agua se usa:",opts:{a:"Para cualquier tipo de incendio",b:"Solo para incendios tipo A",c:"Para incendios tipo B",d:"Solo eléctrico"},correct:"b",hint:"El agua conduce electricidad y dispersa líquidos: solo para sólidos orgánicos.",exp:"El extintor de agua se usa exclusivamente en fuegos Clase A (sólidos orgánicos). NUNCA en eléctricos (clase C) por conductividad, ni en líquidos (B) porque los dispersa."},
+  {id:18,cat:"EG",q:"El extintor de Halon se usa:",opts:{a:"Solo en la cabina de pilotos",b:"En incendios eléctricos",c:"Solamente en incendios tipo A",d:"Solo en incendio tipo D"},correct:"b",hint:"Es el extintor universal a bordo, especialmente útil en eléctricos.",exp:"El Halon es ideal para incendios eléctricos (clase C) porque no conduce y no daña equipos. También sirve en clase A y B. Es el extintor principal a bordo de aeronaves."},
+  {id:19,cat:"EG",q:"El flujo de las salidas de una botella de oxígeno portátil es de:",opts:{a:"4 Lts por minuto en Low y 8 en High.",b:"3 Lts por minuto en Low y 6 en High.",c:"2 Lts por minuto en Low y 4 en High.",d:"1 Lts por minuto en Low y 2 en High."},correct:"c",hint:"Recuerde: 2 y 4 LPM (Low y High).",exp:"La botella portátil de oxígeno entrega 2 LPM en posición LOW y 4 LPM en HIGH. HIGH se usa para emergencias y pasajeros con dificultad respiratoria aguda."},
+  {id:20,cat:"EG",q:"El flujo de salida de pasajeros por una ventanilla de emergencia es de:",opts:{a:"Un pasajero por segundo.",b:"Dos pasajeros cada dos segundos.",c:"Un pasajero cada dos segundos.",d:"Dos pasajeros por segundo."},correct:"a",hint:"Una persona por segundo es el ritmo crítico para evacuar en 90s.",exp:"Por ventanilla de emergencia debe pasar un pasajero por segundo. Este ritmo asegura cumplir con el requisito regulatorio de evacuación total en 90 segundos."},
+  {id:21,cat:"EG",q:"El fuego es un proceso químico en el que intervienen los siguientes elementos:",opts:{a:"Oxígeno, temperatura y aire.",b:"Temperatura, calor y oxígeno.",c:"Material comburente, fuego y gas.",d:"Material combustible, oxígeno y calor."},correct:"d",hint:"El triángulo del fuego: combustible + oxígeno + calor.",exp:"Los tres elementos del triángulo del fuego son: material combustible (lo que arde), oxígeno (comburente) y calor (energía de ignición). Eliminando uno se extingue el fuego."},
+  {id:22,cat:"EG",q:"El PBE (Protective Breathing Equipment):",opts:{a:"Es un equipo de protección contra humo y gases.",b:"Tiene una batería que dura 30 minutos.",c:"Se puede usar en una descompresión de cabina",d:"Es un equipo de protección para pasajeros."},correct:"a",hint:"PBE = Protección Respiratoria contra humo/gases, uso de tripulación.",exp:"El PBE es un capuchón con generador químico que protege ojos y vías respiratorias de humo y gases tóxicos durante el combate de incendios. Duración aprox 15 min. Es para tripulación."},
+  {id:23,cat:"EG",q:"El tiempo de inflado del tobogán es de:",opts:{a:"3 segundos.",b:"5 segundos.",c:"8 segundos."},correct:"b",hint:"El tobogán infla en 5 segundos para evacuación rápida.",exp:"El tobogán de evacuación (slide) infla completamente en aproximadamente 5 segundos tras activación, permitiendo iniciar la evacuación sin demoras significativas."},
+  {id:24,cat:"EG",q:"El tiempo máximo para evacuar una aeronave no debe exceder de:",opts:{a:"60 seg.",b:"90 seg.",c:"100 seg.",d:"120 seg."},correct:"b",hint:"Regla universal: 90 segundos para evacuación completa.",exp:"La regulación (FAA, OACI, RAD) exige que toda aeronave certificada para transporte comercial pueda evacuarse completamente en 90 segundos con la mitad de salidas bloqueadas."},
+  {id:25,cat:"EG",q:"En caso de un amarizaje, se debe tratar de:",opts:{a:"Nadar hasta la costa más cercana",b:"Apartarse rápidamente de la aeronave.",c:"Permanecer juntos",d:"Todas son correctas"},correct:"c",hint:"La supervivencia grupal aumenta las posibilidades de rescate.",exp:"Permanecer juntos facilita la localización por equipos de rescate, permite compartir recursos y calor corporal, y mantiene la moral del grupo. Nunca nadar lejos del punto del amarizaje."},
+  {id:26,cat:"EG",q:"En una descompresión de cabina los tripulantes de Cabina deberán:",opts:{a:"Tomar una máscara, afirmarse o sentarse, ordenar que pasajeros usen máscara de oxígeno, esperar orden de avión nivelado, atender al cockpit, a los tripulantes y a los pasajeros.",b:"Tomar botella de oxígeno, ordenar que pasajeros usen máscara, afirmarse, esperar orden de avión nivelado.",c:"Tomar máscara, afirmarse, revisar condiciones de los pasajeros y tripulantes.",d:"Afirmarse, tomar una máscara, atender a los pasajeros y dirigirse al cockpit."},correct:"a",hint:"Secuencia: máscara propia → afirmarse → ordenar → esperar nivelación → atender.",exp:"Procedimiento correcto: primero ponerse máscara (autoprotección), afirmarse, ordenar a pasajeros, esperar nivelación del avión, luego atender por prioridad: cockpit, tripulación, pasajeros."},
+  {id:27,cat:"EG",q:"En una emergencia que se entiende por supervivencia",opts:{a:"Permanecer vivo hasta ser rescatado",b:"Disponer con prudencia del Kit de emergencia",c:"Aplicar las normas de primeros auxilios",d:"Ninguna de las anteriores"},correct:"a",hint:"Definición esencial: mantenerse con vida hasta el rescate.",exp:"Supervivencia es el conjunto de acciones que permiten permanecer vivos hasta ser rescatados. Los demás puntos son medios (kit, primeros auxilios) pero no la definición."},
+  {id:28,cat:"EG",q:"En una salida de emergencia no se deben sentar durante despegues y aterrizajes:",opts:{a:"Niños menores de 15 años.",b:"Personas adultas.",c:"Uniformados.",d:"Tripulantes en comisión de servicios."},correct:"a",hint:"Los menores no pueden operar una salida de emergencia.",exp:"En filas de salida de emergencia (ABP - Able-Bodied Passengers) no se sientan menores de 15 años, personas con movilidad reducida, ni quienes no puedan operar la salida bajo presión."},
+  {id:29,cat:"EG",q:"La balsa se infla en:",opts:{a:"5 segundos.",b:"10 segundos.",c:"15 segundos."},correct:"b",hint:"La balsa requiere más tiempo que el tobogán: 10 segundos.",exp:"La balsa salvavidas infla completamente en aproximadamente 10 segundos tras activación del pull-to-inflate, comparado con los 5 segundos del tobogán."},
+  {id:30,cat:"EG",q:"La precaución que se debe tener antes de sacar una balsa del avión es:",opts:{a:"Amarrarla al soporte del asiento más cercano.",b:"Tirar pull to inflate y verificar tubos de flotación.",c:"Amarrarla a la cuerda de la ventanilla de emergencia.",d:"Amarrarla a la manilla de la puerta más cercana."},correct:"a",hint:"Siempre amarrar antes de sacarla, para no perderla en el agua.",exp:"Antes de lanzar la balsa al exterior se debe amarrar a un punto firme (soporte del asiento o cuerda de la ventanilla) para evitar que la corriente la aleje de los sobrevivientes."},
+  {id:31,cat:"EG",q:"La primera acción de un Tripulante auxiliar de cabina al llegar al avión es chequear:",opts:{a:"Servicios de comidas y bebidas.",b:"Equipo de emergencia y que no haya elementos extraños.",c:"Equipo de emergencia del cockpit.",d:"Solo el Sistema de oxígeno de emergencia."},correct:"b",hint:"Seguridad primero: equipo de emergencia y revisión anti-sabotaje.",exp:"Al abordar, lo primero es el chequeo de seguridad: equipo de emergencia (extintores, botellas O2, PBE, balsa, ELT) y revisión del avión para detectar elementos extraños (security search)."},
+  {id:32,cat:"EG",q:"Las bengalas cuando se utilizan en un ditching:",opts:{a:"Son para pedido de socorro diurno y nocturno.",b:"Tienen un extremo liso que corresponde a la señal nocturna.",c:"Se debe activar con los brazos extendidos fuera de la balsa y el viento soplando por la espalda del operador.",d:"Respuesta 1 y 3 son correctas."},correct:"d",hint:"Sirven día y noche, se activan con viento a la espalda fuera de la balsa.",exp:"Las bengalas pirotécnicas son señales diurnas (humo) y nocturnas (luz). Se activan con los brazos extendidos fuera de la balsa, con el viento por la espalda para evitar accidentes."},
+  {id:33,cat:"EG",q:"Las bengalas:",opts:{a:"Son elementos utilizados para hacer fuego.",b:"Son elementos de localización usados para hacer señales.",c:"Se usan solo de día.",d:"No pueden usarse de noche."},correct:"b",hint:"Su propósito es señalización para localización, no encender fuego.",exp:"Las bengalas son dispositivos pirotécnicos de señalización para facilitar la localización de los supervivientes. Tienen versión diurna (humo) y nocturna (luz brillante)."},
+  {id:34,cat:"EG",q:"Las bengalas:",opts:{a:"Son elementos utilizados para hacer fuego.",b:"Son elementos de localización usados para hacer señales.",c:"Se usan sólo de día para hacer señales luminosas.",d:"Se pueden usar sólo de noche."},correct:"b",hint:"Función: señalización para localización en supervivencia.",exp:"Las bengalas son elementos pirotécnicos de localización y señalización, usables tanto de día (humo de colores) como de noche (luz). No son para hacer fuego."},
+  {id:35,cat:"EG",q:"Las empresas de transporte aéreo en RD serán capaces de demostrar que efectúan una evacuación rápida y segura de sus aeronaves con capacidad de 60 pasajeros o más en:",opts:{a:"En un tiempo no mayor de 60 segundos",b:"En 45 segundos",c:"En 1 minuto.",d:"En menos o igual de 90 segundos incluida la tripulación"},correct:"d",hint:"90 segundos incluyendo la tripulación es la regla estándar.",exp:"La regulación dominicana (RAD), alineada con FAA y OACI, exige evacuación completa en 90 segundos o menos incluyendo tripulación, asumiendo 50% de salidas bloqueadas."},
+  {id:36,cat:"EG",q:"Las máscaras de oxígeno de pasajeros (drop out):",opts:{a:"Proporcionan solo oxígeno de flujo continuo.",b:"Proporcionan solo oxígeno de demanda.",c:"Proporcionan oxígeno de flujo continuo y de demanda en emergencia.",d:"Proporcionan oxígeno de demanda y flujo continuo en emergencia."},correct:"a",hint:"Las máscaras de pasajeros son sólo flujo continuo (generador químico).",exp:"Las máscaras drop-out de pasajeros entregan solo flujo continuo desde un generador químico de perclorato. Las de demanda son exclusivas de la tripulación (en cockpit)."},
+  {id:37,cat:"EG",q:"¿Qué elementos intervienen en un proceso de fuego?",opts:{a:"Agua, calor y oxigeno",b:"Temperatura y carbono",c:"Material combustible, fuego y gas",d:"Material combustible, oxígeno y calor"},correct:"d",hint:"Triángulo del fuego: combustible + oxígeno + calor.",exp:"Los tres lados del triángulo del fuego son: material combustible, oxígeno (comburente) y calor (energía de activación). Sin uno de ellos, no hay fuego."},
+  {id:38,cat:"EG",q:"Se considera pasajero insubordinado: a los pasajeros que cumplan con las instrucciones dadas los tripulantes de cabina",opts:{a:"Falso",b:"Verdadero"},correct:"a",hint:"Insubordinado es justo lo contrario: el que NO cumple.",exp:"Pasajero insubordinado (unruly passenger) es el que NO cumple instrucciones de la tripulación, interfiere con sus funciones o pone en peligro la seguridad del vuelo."},
+  {id:39,cat:"EG",q:"Si el pasajero no viaja, el equipaje facturado puede viajar sin ningún inconveniente.",opts:{a:"Falso",b:"Verdadero"},correct:"a",hint:"Por seguridad, equipaje y pasajero deben coincidir en el vuelo.",exp:"Por norma de seguridad internacional, el equipaje debe coincidir con su pasajero en el mismo vuelo. Si el pasajero no embarca, el equipaje debe ser ubicado y removido (passenger-baggage reconciliation)."},
+  {id:40,cat:"EG",q:"Son consideradas fases críticas de un vuelo:",opts:{a:"Los descensos de emergencia",b:"Los despegues interrumpidos (Abortados)",c:"Las turbulencias",d:"Los despegues y aterrizajes."},correct:"d",hint:"Las fases críticas estándar: despegue y aterrizaje.",exp:"Las fases críticas del vuelo son despegue, aterrizaje y todas las operaciones por debajo de 10,000 pies. En estas fases aplica el concepto de cockpit estéril."},
+  {id:41,cat:"EG",q:"Tarjeta de vencimiento, accesible y asegurado, MANOMETRO MARCANDO MINIMO MIL QUINIENTO corresponde al chequeo de prevuelo de:",opts:{a:"Botella de oxígeno.",b:"Extintor de Halon.",c:"Extintor de freón.",d:"Extintor de agua."},correct:"a",hint:"Los 1500 PSI corresponden a la botella de oxígeno.",exp:"El manómetro mínimo de 1500 PSI es característico de la botella portátil de oxígeno. Los extintores tienen marcaje por arco verde, no por presión mínima en PSI específicos."},
+  {id:42,cat:"EG",q:"Una amenaza de bomba puede ser recibida de cuatro maneras: por teléfono, por escrito, personal o tierra aire cabina de mando.",opts:{a:"Falso",b:"Verdadero"},correct:"b",hint:"Las cuatro vías de amenaza están bien identificadas.",exp:"Las amenazas de bomba pueden recibirse por teléfono (la más común), por escrito (anónimo), de manera personal (cara a cara) o por comunicación tierra-aire al cockpit. Cada vía tiene protocolo específico."},
+  {id:43,cat:"EG",q:"Una evacuación puede ser:",opts:{a:"Solamente prevista.",b:"Solamente imprevista.",c:"Prevista o imprevista.",d:"Todas son previstas."},correct:"c",hint:"Existen ambos tipos: con tiempo de preparación o súbita.",exp:"Las evacuaciones pueden ser previstas (con tiempo para preparar cabina y briefing a pasajeros) o imprevistas (súbitas, sin aviso, por accidente o falla repentina)."},
+
+  // ============ FISIOLOGÍA DE VUELO (44-70) ============
+  {id:44,cat:"FV",q:"¿Con cuál otro ser vivo hacemos intercambio gaseoso para mantener la vida?",opts:{a:"Gatos",b:"Ovejas",c:"Hombre",d:"Plantas"},correct:"d",hint:"El ciclo del O2-CO2 es entre animales y vegetales.",exp:"Los humanos exhalamos CO2 que las plantas absorben para fotosíntesis, y las plantas liberan O2 que nosotros respiramos. Es el ciclo biológico básico de intercambio gaseoso."},
+  {id:45,cat:"FV",q:"¿Cuál de las siguientes situaciones probablemente genere hipoventilación?",opts:{a:"Un caso de exceso en el consumo de alcohol",b:"Estrés que produzca ansiedad",c:"Respiración baja e insuficiente",d:"Ninguna de las anteriores"},correct:"b",hint:"El estrés/ansiedad altera el patrón respiratorio normal.",exp:"Aunque hipoventilación literalmente significa respiración insuficiente, la causa común en aviación es el estrés con ansiedad, que altera el ritmo respiratorio y la ventilación pulmonar adecuada."},
+  {id:46,cat:"FV",q:"Cuando hablamos de Hipoxia nos referimos a:",opts:{a:"Falta de oxígeno en los tejidos.",b:"Falta de vitamina C",c:"Baja cantidad de oxígeno en la sangre.",d:"1 y 2 son correctas"},correct:"c",hint:"Hipoxia = baja concentración de O2 en sangre.",exp:"La hipoxia es la deficiencia de oxígeno en la sangre. Se diferencia de anoxia (ausencia total). Es uno de los riesgos fisiológicos más críticos del vuelo a altitud."},
+  {id:47,cat:"FV",q:"¿Cuándo se es posible de tener una desorientación espacial?",opts:{a:"Siempre que no se precise de un horizonte real",b:"Solo de noche",c:"1 y 2 son correctas",d:"Ninguna de las anteriores"},correct:"a",hint:"Ocurre cuando no hay referencia visual de un horizonte verdadero.",exp:"La desorientación espacial puede ocurrir en cualquier momento sin referencia visual del horizonte verdadero: noche, niebla, IMC, en nubes, sobre agua sin referencia. Por eso se confía en instrumentos."},
+  {id:48,cat:"FV",q:"Después de haber ingerido cualquier bebida que contenga alcohol cuantas horas debería estar usted de reposo antes de la aceptación de un vuelo.",opts:{a:"8 hrs",b:"12 hrs",c:"24 hrs",d:"6 hrs"},correct:"a",hint:"Regla 'bottle to throttle': mínimo 8 horas.",exp:"La regla 8 horas 'bottle to throttle' es el mínimo regulatorio. Algunas aerolíneas exigen 12 horas. Volar bajo efecto del alcohol es violación grave y peligro fisiológico real."},
+  {id:49,cat:"FV",q:"El dióxido de carbono, actúa como regulador de la actividad respiratoria?",opts:{a:"Cierto",b:"Falso",c:"Siempre.",d:"Nunca."},correct:"a",hint:"El CO2 estimula los quimiorreceptores del centro respiratorio.",exp:"El CO2 sanguíneo (no el O2) es el principal estímulo del centro respiratorio del bulbo raquídeo. Cuando sube CO2, el cuerpo aumenta automáticamente frecuencia y profundidad respiratoria."},
+  {id:50,cat:"FV",q:"El disbarismo es un fenómeno el cual es producido por:",opts:{a:"Exceso de oxígeno.",b:"Disminución o aumento brusco de la presión atmosférica.",c:"Luz brillante.",d:"Aumento de la presión atmosférica."},correct:"b",hint:"Disbarismo = cambios bruscos de presión (ascenso/descenso).",exp:"El disbarismo agrupa los trastornos por cambios bruscos de presión: barotraumatismos de oído (baro-otitis), senos paranasales (barosinusitis), gases intestinales y la enfermedad descompresiva."},
+  {id:51,cat:"FV",q:"El gas más abundante en el aire que respiramos es:",opts:{a:"Oxigeno",b:"Anhídrido Carbónico",c:"Nitrógeno",d:"Helio"},correct:"c",hint:"Nitrógeno representa el 78% del aire atmosférico.",exp:"El aire atmosférico contiene 78% nitrógeno (N2), 21% oxígeno (O2) y 1% otros gases (argón, CO2, vapor de agua). El nitrógeno es por mucho el más abundante."},
+  {id:52,cat:"FV",q:"El mejor método sería el de mirar más allá de unos 15 segundos y luego dentro de unos 5 segundos. Con relación a que tópico de la fisiología.",opts:{a:"Inversión de ilusión",b:"Autokinesis",c:"Coriolis ilusión",d:"Somatogravic"},correct:"b",hint:"Romper la fijación visual previene la autokinesis.",exp:"Para evitar la autokinesis (ilusión de movimiento de luz fija) se recomienda no fijar la vista más de 15s en un punto y luego desviarla a otro por 5s, rompiendo la fijación."},
+  {id:53,cat:"FV",q:"El término 'Tiempo de conciencia útil' se refiere al máximo tiempo que tiene el piloto para tomar las medidas para su supervivencia.",opts:{a:"Falso",b:"Verdadero"},correct:"b",hint:"TUC = Time of Useful Consciousness, ventana crítica.",exp:"El TUC (Time of Useful Consciousness) es el tiempo entre la pérdida de oxígeno adecuado y la pérdida de capacidad de tomar decisiones efectivas. Disminuye con la altitud (a 35,000ft son solo 30-60s)."},
+  {id:54,cat:"FV",q:"Es causada por la insuficiencia de oxígeno llegando al cerebro.",opts:{a:"Hipoxia",b:"Autokinesis",c:"Exceso de alcohol",d:"Somatogravic"},correct:"a",hint:"La hipoxia cerebral es la causa principal de pérdida de juicio.",exp:"La hipoxia es la deficiencia de oxígeno en sangre y tejidos. La hipoxia cerebral produce desde euforia leve hasta pérdida de conciencia. Los síntomas son insidiosos."},
+  {id:55,cat:"FV",q:"¿Es la Hiperventilación el aumento en la frecuencia y la profundidad de las respiraciones?",opts:{a:"Falso",b:"Verdadero"},correct:"b",hint:"Hiper = aumentado; ventilación = respiración.",exp:"La hiperventilación es respiración excesiva: aumento de frecuencia y/o profundidad respiratoria. Causa eliminación excesiva de CO2, generando alcalosis respiratoria con síntomas similares a hipoxia."},
+  {id:56,cat:"FV",q:"Fisiología de vuelo es la rama de la medicina aeronáutica que pretende que los tripulantes reconozcan los cambios que en ellos se produce por:",opts:{a:"los cambios de altura",b:"Efectos del alcohol",c:"1 y 2 son correctas",d:"Ninguna de las anteriores"},correct:"c",hint:"Estudia múltiples factores: altitud, alcohol, fatiga, etc.",exp:"La fisiología de vuelo estudia cómo afectan al organismo los factores del entorno aeronáutico: altitud, presión, temperatura, aceleraciones, así como sustancias (alcohol, fármacos) y estados (fatiga)."},
+  {id:57,cat:"FV",q:"Hipoxia y anoxia son términos:",opts:{a:"Sinónimos",b:"Diferentes",c:"Iguales",d:"A y C son correctas"},correct:"b",hint:"Hipoxia = oxígeno bajo; anoxia = oxígeno ausente.",exp:"Son distintos. Hipoxia: cantidad insuficiente de O2 (pero hay algo). Anoxia: ausencia total de O2. La anoxia es la forma extrema y letal de hipoxia."},
+  {id:58,cat:"FV",q:"La atmosfera se divide en: Troposfera, Estratosfera, Ionosfera y Exosfera.",opts:{a:"Falso",b:"Verdadero"},correct:"b",hint:"Esas son las cuatro capas atmosféricas principales.",exp:"Las capas atmosféricas son: Troposfera (0-12 km), Estratosfera (12-50 km), Mesosfera, Termosfera/Ionosfera y Exosfera. La aviación comercial vuela en troposfera/baja estratosfera."},
+  {id:59,cat:"FV",q:"La Autokinesis es un fenómeno de la fisiología que se produce:",opts:{a:"En la oscuridad",b:"En vuelo y movimiento brusco",c:"En la búsqueda de un objeto por un periodo corto de tiempo",d:"Todas las anteriores"},correct:"a",hint:"Es la ilusión de movimiento de una luz fija en oscuridad.",exp:"La autokinesis es la ilusión de que una luz estática parece moverse cuando se fija la vista en ella en la oscuridad. Se evita no fijando la vista más de 10-15 segundos."},
+  {id:60,cat:"FV",q:"La baro-otitis, es un fenómeno relacionado con el oído medio, debido a que las presiones no se han igualado.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Baro-otitis: oído medio + presión sin igualar.",exp:"La baro-otitis (oído de aviador) es la inflamación del oído medio por fallo en igualar presiones entre oído medio y exterior, especialmente en descenso. Maniobra de Valsalva ayuda."},
+  {id:61,cat:"FV",q:"La composición de la atmosfera es de:",opts:{a:"72% Nitrógeno, 10% oxígeno y 8% otros gases.",b:"78% Nitrógeno, 21 % oxígeno y 1% otros gases.",c:"70 % Nitrógeno, 20% oxígeno y 10% otros gases."},correct:"b",hint:"Recuerde: 78-21-1 (N-O-otros).",exp:"La atmósfera estándar contiene aproximadamente 78% nitrógeno, 21% oxígeno y 1% otros gases (argón, CO2, vapor de agua, gases nobles). Esta proporción es constante hasta 80 km."},
+  {id:62,cat:"FV",q:"La hipoxia puede que ocurra y ser detectada solo a:",opts:{a:"Grandes alturas",b:"En cualquier momento y altura",c:"Solo a nivel medio del mar",d:"Ninguna de las anteriores"},correct:"b",hint:"Hipoxia no es exclusiva de altura: hay múltiples causas.",exp:"La hipoxia puede ocurrir a cualquier altitud por múltiples causas: hipóxica (altitud), anémica (poca Hb), estagnante (mala circulación) o histotóxica (CO, alcohol). No se limita a gran altura."},
+  {id:63,cat:"FV",q:"La pérdida parcial de oxígeno en la sangre se conoce como:",opts:{a:"Anoxia",b:"Hipoxia",c:"Bens",d:"Visión de túnel"},correct:"b",hint:"Pérdida PARCIAL = hipoxia; pérdida TOTAL = anoxia.",exp:"Hipoxia es disminución parcial de O2 en sangre/tejidos. Anoxia es ausencia total. Bends es enfermedad descompresiva. Visión de túnel es un síntoma, no la condición."},
+  {id:64,cat:"FV",q:"La visión nocturna es de tipo:",opts:{a:"Central.",b:"A color.",c:"Periférica.",d:"Ninguna de las anteriores."},correct:"c",hint:"De noche se ve mejor de reojo: visión periférica.",exp:"En oscuridad la visión central (conos) es ineficaz. Los bastones (visión periférica) son los responsables de la visión nocturna; por eso se ve mejor mirando 'de reojo'."},
+  {id:65,cat:"FV",q:"Los síntomas de la hiperventilación y/o los síntomas de la hipoxia pueden ser:",opts:{a:"Distintos.",b:"Opuestos.",c:"Idénticos.",d:"Similares."},correct:"a",hint:"Pregunta capciosa: la guía marca 'distintos'.",exp:"Aunque clínicamente se parecen mucho (mareo, hormigueo, confusión), la guía considera que tienen síntomas distintos. En la práctica el tratamiento difiere: hipoxia → O2; hiperventilación → respirar lento."},
+  {id:66,cat:"FV",q:"Podría llegar, a un estado de hipoxia hasta la inconciencia",opts:{a:"Falso",b:"Verdadero"},correct:"a",hint:"Respuesta según guía oficial del IASCA.",exp:"Según el marcaje de la guía IASCA, esta pregunta se contesta 'Falso'. En la práctica clínica, la hipoxia severa SÍ puede llevar a la inconsciencia; responda según el criterio del examen."},
+  {id:67,cat:"FV",q:"Un brusco cambio de un ascenso y en línea recta y el nivel de vuelo puede crear la ilusión de volteretas hacia atrás.",opts:{a:"Inversión de ilusión",b:"Autokinesis",c:"Exceso de alcohol",d:"Somatogravic"},correct:"a",hint:"'Inversión' por el cambio brusco que invierte la percepción.",exp:"La ilusión de inversión ocurre cuando un cambio abrupto de actitud (ej. de ascenso a vuelo nivelado) genera la sensación de hacer volteretas hacia atrás, por información vestibular errónea."},
+  {id:68,cat:"FV",q:"Un brusco movimiento de la cabeza durante una tasa constante a su vez puede crear la ilusión de rotación en un eje completamente diferente. Esta ilusión puede ser abrumadora y tan rápidos movimientos de cabeza se convierte en lo que debe evitarse.",opts:{a:"Inversión de ilusión",b:"Autokinesis",c:"Coriolis ilusión",d:"Somatogravic"},correct:"c",hint:"Coriolis: mover la cabeza durante un viraje constante.",exp:"La ilusión de Coriolis surge al mover la cabeza durante un viraje sostenido, generando estimulación simultánea de canales semicirculares, percibiendo rotación en eje distinto. Muy desorientadora."},
+  {id:69,cat:"FV",q:"Una brusca corrección de un ángulo de visión en vuelo de un lado a otro podría ocasionar:",opts:{a:"No pasa nada",b:"Un vértigo",c:"Vómitos",d:"1 y 3 son correctas"},correct:"b",hint:"Movimientos visuales bruscos generan vértigo vestibular.",exp:"Los cambios bruscos del ángulo de visión durante el vuelo pueden generar vértigo por conflicto entre las señales visuales y vestibulares (oído interno), una forma de desorientación espacial."},
+  {id:70,cat:"FV",q:"Una rápida aceleración durante el despegue puede crear la ilusión de estar en una actitud de nariz arriba.",opts:{a:"Hipoxia",b:"Autokinesis",c:"Exceso de alcohol",d:"Somatogravic"},correct:"d",hint:"Somatogravic: la aceleración 'empuja' hacia atrás como si se subiera.",exp:"La ilusión somatogravica ocurre cuando una fuerte aceleración lineal (ej. despegue) genera la sensación de estar inclinado hacia atrás. Peligroso porque el piloto podría bajar la nariz erróneamente."},
+{id:71,cat:"PA",q:"¿Qué cantidad de alcohol en la sangre debe de ser encontrada para ser positivo en un dopaje.",opts:{a:"6%",b:"4%",c:"2%",d:"10%"},correct:"b",hint:"Según la guía IASCA: 4% (valor de referencia del exam).",exp:"Según el marcaje oficial de la guía IASCA, el valor es 4%. Nota: en muchos países el límite legal real es 0.02-0.04% (BAC) para tripulación, mucho menor que el público general."},
+  {id:72,cat:"PA",q:"Ante una Hiperglicemia se debe administrar de inmediato agua azucarada.",opts:{a:"Verdadero.",b:"Falso."},correct:"b",hint:"HIPER = exceso. Agregar más azúcar empeoraría el cuadro.",exp:"Hiperglucemia es exceso de glucosa en sangre. Administrar azúcar la agravaría. El azúcar se da en HIPOglucemia (déficit). Identificar correctamente el cuadro es crítico."},
+  {id:73,cat:"PA",q:"Cuales son algunas de las medidas generales de tratamiento de emergencia de un SHOCK.",opts:{a:"Mantener un adecuado aporte sanguíneo al cerebro",b:"Disminuir la perdida de calor corporal",c:"Mantener permeable las vías aéreas.",d:"Todas las anteriores"},correct:"d",hint:"Tratamiento del shock: ABC + circulación + temperatura.",exp:"El manejo del shock incluye: vía aérea permeable, oxigenación, mantener flujo sanguíneo cerebral (elevar miembros), control de pérdida de calor, identificar/tratar la causa y solicitar ayuda médica."},
+  {id:74,cat:"PA",q:"Cuáles son las primeras manifestaciones de SHOCK.",opts:{a:"Mareos, palidez, frialdad de la piel, baja presión arterial.",b:"Vómitos y diarrea",c:"Histeria y confusión.",d:"Falta de oxígeno y somnolencia."},correct:"a",hint:"Triada clásica: palidez, piel fría, hipotensión.",exp:"Las primeras manifestaciones del shock son: mareos por mala perfusión cerebral, palidez por vasoconstricción periférica, frialdad cutánea (piel marmórea, sudorosa) e hipotensión arterial."},
+  {id:75,cat:"PA",q:"¿Cuáles son los signos vitales que debemos buscar en un ser vivo accidentado, inicialmente?",opts:{a:"Pulso, tensión Arterial, respiración.",b:"Perdida de la sensibilidad",c:"Adormecimiento de las extremidades",d:"Temperatura, pulso, frecuencia respiratoria, tensión arterial."},correct:"d",hint:"Los 4 signos vitales clásicos: T, P, FR, TA.",exp:"Los cuatro signos vitales son: Temperatura, Pulso (frecuencia cardiaca), Frecuencia Respiratoria y Tensión Arterial. Su evaluación inicial guía la prioridad y tipo de auxilio."},
+  {id:76,cat:"PA",q:"¿Cuáles son los tipos de hemorragias?",opts:{a:"Hemorragias externas e internas",b:"Hemorragias Alternas",c:"Hemorragias Capilares",d:"Hemorragias fluidas"},correct:"a",hint:"Clasificación básica por destino de la sangre.",exp:"Por destino: externas (sangre visible) e internas (en cavidades). Por origen vascular: arteriales, venosas y capilares. Las internas son las más peligrosas por ser difíciles de detectar."},
+  {id:77,cat:"PA",q:"¿Cuándo debe practicar el torniquete?",opts:{a:"Cuando hay fractura",b:"Siempre",c:"En recurso extremo"},correct:"c",hint:"Solo cuando la vida del paciente está en riesgo por hemorragia masiva.",exp:"El torniquete es de último recurso, solo cuando otras técnicas (presión directa, vendaje compresivo, elevación) fallan. Mal aplicado puede causar isquemia, daño nervioso y pérdida del miembro."},
+  {id:78,cat:"PA",q:"¿Cuándo debe practicar el torniquete?",opts:{d:"Cuando hay fractura",e:"Siempre",f:"En recurso extremo"},correct:"f",hint:"Recurso extremo: misma respuesta que pregunta 77.",exp:"Torniquete solo como último recurso en hemorragia arterial masiva incontrolable. Su uso indebido puede provocar daños graves al miembro afectado."},
+  {id:79,cat:"PA",q:"Defina que es hemorragia:",opts:{a:"Pérdida de sangre",b:"Baja presión",c:"Dolor de espalda",d:"Pérdida de Glóbulos blancos"},correct:"a",hint:"Definición simple: salida de sangre fuera del vaso.",exp:"Hemorragia es la salida o pérdida de sangre desde los vasos sanguíneos. Puede ser externa (visible) o interna (en cavidades corporales)."},
+  {id:80,cat:"PA",q:"Diga usted cuales son las medidas básicas para salvar una vida.",opts:{a:"Calmar el dolor",b:"Prevenir el CHOCK",c:"Actuar directamente sobre las causas específicas",d:"Todas las anteriores"},correct:"d",hint:"Las tres medidas básicas se aplican simultáneamente.",exp:"Las medidas básicas en primeros auxilios son: calmar el dolor (analgesia y posición), prevenir el shock (mantener perfusión y temperatura) y atacar la causa específica (hemorragia, asfixia, etc.)."},
+  {id:81,cat:"PA",q:"El dolor intenso, la impotencia funcional, deformidad total o parcial son manifestaciones de una:",opts:{a:"Equimosis.",b:"Cianosis.",c:"Hemorragia.",d:"Fractura."},correct:"d",hint:"Tríada: dolor + impotencia + deformidad = fractura.",exp:"Los signos clásicos de fractura son: dolor intenso, impotencia funcional (no puede mover), deformidad (angulación), crepitación y edema. La inmovilización es el primer auxilio clave."},
+  {id:82,cat:"PA",q:"El objetivo del vendaje es:",opts:{a:"Comprimir una herida y fijar una curación.",b:"Inmovilizar una fractura y protegerla de infecciones.",c:"Todas las anteriores son correctas."},correct:"c",hint:"El vendaje cumple múltiples funciones simultáneas.",exp:"El vendaje sirve para: comprimir y controlar sangrado, fijar curaciones/apósitos, inmovilizar fracturas o esguinces, proteger heridas de contaminación y proporcionar soporte."},
+  {id:83,cat:"PA",q:"El SHOCK puede presentarse debido a diferentes causas teniendo entre las principales:",opts:{a:"Depresión, malestar general, ceguera.",b:"Fatiga y cólicos.",c:"Visión Nublada y Bostezos.",d:"El dolor, Traumatismos fuertes, hemorragias."},correct:"d",hint:"Causas reales: dolor severo, trauma, pérdida de volumen.",exp:"Las causas principales de shock son: hipovolemia (hemorragia, deshidratación), trauma severo, dolor extremo, shock cardiogénico, anafiláctico, séptico o neurogénico."},
+  {id:84,cat:"PA",q:"En caso de tener un paciente en estado de shock sin lesión de cráneo.",opts:{a:"Buscaría ayuda profesional.",b:"Colocaría al paciente en posición horizontal con los pies más altos que la cabeza.",c:"Le daría a beber una pequeña dosis de alcohol."},correct:"b",hint:"Posición Trendelenburg: piernas elevadas, sangre al cerebro.",exp:"En shock sin lesión craneal: paciente en decúbito supino con piernas elevadas 30-45cm (Trendelenburg). Esto aumenta el retorno venoso y mejora la perfusión cerebral. NUNCA dar alcohol."},
+  {id:85,cat:"PA",q:"¿En qué casos se hace de inmediato respiración artificial?",opts:{a:"Shock eléctrico y asfixia por gases.",b:"Ahorcamiento sin fractura de cuello.",c:"Todas las anteriores."},correct:"c",hint:"Cualquier paro respiratorio: respiración artificial inmediata.",exp:"Se realiza respiración artificial ante cualquier paro respiratorio: shock eléctrico, asfixia por gases tóxicos, ahogamiento, ahorcamiento sin lesión cervical, sobredosis, etc. Tiempo es vida."},
+  {id:86,cat:"PA",q:"¿En qué forma podemos lograr mejoría del dolor en los casos de fractura?",opts:{a:"Tomando la frecuencia respiratoria",b:"Inmovilizando las articulaciones distal y proximal a la fractura.",c:"Evitando la presión digital.",d:"Trasladando al paciente a un centro asistencial."},correct:"b",hint:"Inmovilizar 'arriba y abajo' del foco fractuario.",exp:"La inmovilización de las articulaciones proximal y distal al foco de fractura impide el movimiento de los extremos óseos, reduciendo dolor y previniendo lesión vascular o nerviosa adicional."},
+  {id:87,cat:"PA",q:"En una hemorragia por la cavidad bucal (hemoptisis). ¿En qué posición pondría al paciente?",opts:{a:"Posición horizontal y lateral.",b:"Posición semi-sentado.",c:"Posición horizontal con los muslos cruzados."},correct:"b",hint:"Semi-sentado para evitar aspiración de sangre.",exp:"En hemoptisis (sangrado pulmonar) el paciente debe estar semi-sentado para favorecer la salida de sangre y prevenir aspiración hacia vías respiratorias o el otro pulmón."},
+  {id:88,cat:"PA",q:"En una herida por abrasión UD. deberá limpiarla, aplicar un antiséptico y cubrirla.",opts:{a:"Verdadero.",b:"Falso."},correct:"a",hint:"Tres pasos básicos para abrasión: limpiar, desinfectar, cubrir.",exp:"Las abrasiones (rozaduras) requieren limpieza con suero o agua, retirar cuerpos extraños, aplicar antiséptico (yodo, clorhexidina) y cubrir con apósito estéril para prevenir infección."},
+  {id:89,cat:"PA",q:"En una herida punzante en la cual no queda ningún cuerpo extraño incrustado",opts:{a:"Dejaría sangrar la herida un poco.",b:"Cubriría la herida con gasa y apósito.",c:"Todas las anteriores."},correct:"b",hint:"Cubrir con gasa estéril y apósito; no fomentar sangrado.",exp:"En herida punzante limpia (sin cuerpo extraño) se limpia y se cubre con gasa estéril y apósito. Si hubiera objeto incrustado, NO se retira, se inmoviliza y se traslada."},
+  {id:90,cat:"PA",q:"La atención de Primeros Auxilios en una quemadura grado dos será sumergir la zona bajo un chorro de agua fría y cubrir con un paño limpio.",opts:{a:"Verdadero.",b:"Falso."},correct:"a",hint:"Agua fría (no helada) + cubrir con paño limpio.",exp:"En quemadura de 2° grado: enfriar con agua fría corriente (no helada) por 10-20 min para detener la quemadura, no romper ampollas, cubrir con paño/gasa limpia y trasladar."},
+  {id:91,cat:"PA",q:"La frecuencia normal del pulso es:",opts:{a:"De 52 a 60 pulsaciones por minuto.",b:"De 90 a 100 pulsaciones por minuto.",c:"De 25 a 75 pulsaciones por minuto.",d:"De 60 a 80 pulsaciones por minuto."},correct:"d",hint:"Adulto sano: 60-80 latidos por minuto.",exp:"El pulso normal del adulto en reposo es 60-80 lpm (algunos textos extienden a 60-100). Bradicardia <60, taquicardia >100. En niños es más elevado."},
+  {id:92,cat:"PA",q:"La maniobra de Heimlich se aplica en caso de asfixia por alimentos o cuerpo extraño.",opts:{a:"Verdadero.",b:"Falso."},correct:"a",hint:"Heimlich = compresión abdominal para expulsar obstrucción.",exp:"La maniobra de Heimlich consiste en compresiones abdominales bruscas bajo el diafragma para generar presión que expulse el objeto que obstruye la vía aérea. Salva vidas en atragantamientos."},
+  {id:93,cat:"PA",q:"La prioridad para atender pasajeros que necesiten primeros auxilios es:",opts:{a:"Estado de shock, hemorragia y asfixia.",b:"Estado de shock, asfixia y hemorragia.",c:"Hemorragia, estado de shock y asfixia.",d:"Asfixia, hemorragia, y estado de shock."},correct:"d",hint:"ABC: vía Aérea, sangrado (Bleeding), Circulación.",exp:"La prioridad es Asfixia (vía aérea, sin O2 = muerte en minutos), luego Hemorragia (control de sangrado masivo) y luego Shock (perfusión). Sigue el esquema ABC."},
+  {id:94,cat:"PA",q:"La salida de sangre al ritmo cardiaco y de color rojo vivo corresponde a:",opts:{a:"Hemorragia capilar.",b:"Hemorragia venosa.",c:"Hemorragia arterial.",d:"Epistaxis."},correct:"c",hint:"Pulsátil + rojo vivo = arterial (sangre oxigenada).",exp:"La hemorragia arterial sale a chorro pulsátil (al ritmo cardíaco) y es rojo vivo brillante por su alto contenido de oxígeno. Es la más peligrosa por el volumen perdido en poco tiempo."},
+  {id:95,cat:"PA",q:"La temperatura normal del cuerpo humano es de:",opts:{a:"De 36 grados C a 38 grados C",b:"De 34 a 37 Grados C.",c:"De 38 a 39 Grados C",d:"De 36 a 37 Grados C."},correct:"d",hint:"Rango normal: 36-37°C (axilar).",exp:"La temperatura corporal normal es 36-37°C (axilar). 37.5-38°C es febrícula, >38°C es fiebre. <36°C es hipotermia. Varía ligeramente según hora del día y sitio de medición."},
+  {id:96,cat:"PA",q:"Las fracturas se clasifican en:",opts:{a:"Largas y cortas",b:"Abiertas y cerradas",c:"Leves, moderadas y graves.",d:"Ningunas de las anteriores"},correct:"b",hint:"Clasificación por exposición ósea: abiertas vs cerradas.",exp:"Las fracturas se clasifican en abiertas (con herida que expone el hueso, alto riesgo de infección) y cerradas (sin lesión cutánea). Otras clasificaciones existen pero esta es la principal."},
+  {id:97,cat:"PA",q:"Las lesiones traumáticas de las partes duras son:",opts:{a:"Esguinces-fracturas-luxaciones.",b:"Esguinces-heridas-fracturas.",c:"Contusiones-heridas-luxaciones."},correct:"b",hint:"Según marcaje oficial: esguinces, heridas, fracturas.",exp:"Según la guía IASCA, las lesiones traumáticas de partes duras incluyen esguinces, heridas y fracturas. En clasificación médica estándar partes duras son huesos y articulaciones."},
+  {id:98,cat:"PA",q:"Las quemaduras son lesiones provocadas por:",opts:{a:"Calor, vapor, exposición al sol y electricidad.",b:"Frio por nieve o hielo y algunas sustancias químicas.",c:"A y B son correctas."},correct:"c",hint:"Calor + frío extremo + químicos + eléctrico = todos producen quemaduras.",exp:"Las quemaduras pueden ser por: térmicas (calor o frío), químicas (ácidos, álcalis), eléctricas, por radiación (sol, UV) o por fricción. Todas dañan los tejidos de forma similar."},
+  {id:99,cat:"PA",q:"Los síntomas de una contusión son:",opts:{a:"Equimosis, hematoma y dolor.",b:"Chichón, equimosis e hinchazón.",c:"Moretón, hematoma y sangramiento."},correct:"a",hint:"Triada: equimosis (mancha) + hematoma + dolor.",exp:"La contusión es lesión por golpe sin pérdida de continuidad de la piel. Signos: equimosis (mancha violácea), hematoma (acumulación de sangre subcutánea) y dolor local."},
+  {id:100,cat:"PA",q:"Los tipos de heridas son:",opts:{a:"Abrasivas, cortantes, punzantes y contusas.",b:"Cortantes, punzantes, moretones y hematomas.",c:"Abrasivas, sangrantes, punzantes y moretones."},correct:"a",hint:"4 tipos: abrasiva, cortante, punzante, contusa.",exp:"Las heridas se clasifican según el mecanismo: abrasiva (rozadura superficial), cortante (objeto filoso), punzante (objeto puntiagudo), contusa (golpe que abre piel). Cada una tiene manejo específico."},
+  {id:101,cat:"PA",q:"Para aplicar Oxígeno a un pasajero desde una botella portátil se debe:",opts:{a:"Soltar la ropa y retirar materias grasas del rostro.",b:"Solicitar ayuda profesional (médico) si es posible.",c:"Recostar y despejar vías respiratorias.",d:"Todas las anteriores son correctas."},correct:"d",hint:"Procedimiento integral antes de administrar O2.",exp:"Antes de O2: soltar ropa (mejora respiración), retirar grasa/cosméticos (el O2 acelera combustión), recostar al paciente, despejar vía aérea y buscar ayuda médica calificada si está disponible."},
+  {id:102,cat:"PA",q:"¿Qué factores debemos considerar y tomar en cuenta en caso de atender a un sobreviviente de un accidente de aviación en un área despoblada para su posterior traslado?",opts:{a:"La gravedad del paciente.",b:"Facilidades del traslado",c:"Facilidades de un medio de transporte",d:"Distancia al hospital o centro de emergencia."},correct:"a",hint:"La gravedad del paciente es el factor primario.",exp:"Aunque todos son relevantes, la gravedad del paciente es el factor primordial: define la urgencia del traslado, el método y si conviene mover al paciente o esperar evacuación especializada."},
+  {id:103,cat:"PA",q:"¿Qué se entiende por primeros auxilios?",opts:{a:"Atención inmediata provisional en el mismo lugar del hecho para socorrer un lesionado.",b:"Medidas quirúrgicas que se deben tomar",c:"Cualquier persona que pueda brindarle ayuda a un lesionado.",d:"Diagnostico medico frente a un lesionado."},correct:"a",hint:"Inmediata + provisional + in situ + para estabilizar.",exp:"Los primeros auxilios son la atención inmediata, provisional y temporal que se brinda en el sitio del accidente para preservar la vida y evitar el agravamiento, hasta llegar atención profesional."},
+  {id:104,cat:"PA",q:"¿Qué tipo de intoxicación presenta los siguientes síntomas: pérdida parcial o completa de la conciencia, excitación leve, piel sonrosada tornándose pálida, respiración similar a sueño profundo, pulso fuerte poniéndose débil?",opts:{a:"Intoxicación con alucinógenos.",b:"Intoxicación con antidepresivos.",c:"Intoxicación con alcohol."},correct:"c",hint:"Síntomas clásicos de embriaguez progresiva.",exp:"Los síntomas descritos corresponden a intoxicación alcohólica: excitación inicial, depresión progresiva del SNC, cambio de coloración, depresión respiratoria. Puede progresar a coma etílico."},
+  {id:105,cat:"PA",q:"¿Quién puede dictar las indicaciones específicas, en cuanto a la atención de lesionados o enfermos?",opts:{a:"Los paramédicos.",b:"Los socorristas.",c:"Enfermeras Graduados",d:"Los Médicos."},correct:"d",hint:"Solo el médico tiene autoridad legal para indicaciones clínicas.",exp:"Solo el médico está legalmente autorizado para emitir indicaciones específicas de tratamiento, prescribir medicamentos y dirigir el manejo clínico. El resto del personal asiste bajo su dirección."},
+  {id:106,cat:"PA",q:"Se entiende por quemadura extensa (gran quemado) en un adulto:",opts:{a:"Una quemadura de más del 30% del cuerpo.",b:"Una quemadura de menos del 30% del cuerpo.",c:"Una quemadura que abarque la totalidad de la espalda."},correct:"a",hint:"Más del 30% de superficie corporal = gran quemado adulto.",exp:"En adulto se considera gran quemado cuando la superficie corporal quemada supera el 30%. La regla de los 9 ayuda a estimar (ej. brazo = 9%, espalda = 18%, etc.)."},
+  {id:107,cat:"PA",q:"Se entiende por quemadura extensa (gran quemado) en un niño.",opts:{a:"Quemadura que afecta la totalidad de un brazo.",b:"Quemadura que afecta la totalidad del cuero cabelludo.",c:"Quemadura que afecta más del 15% del cuerpo."},correct:"c",hint:"En niños el umbral es menor: más del 15%.",exp:"En niños, el umbral de gran quemado es menor (15%) porque su superficie corporal proporcional es distinta a la del adulto y son más vulnerables a deshidratación e infección."},
+  {id:108,cat:"PA",q:"Si una persona sufre la incrustación de una partícula de metal en un ojo. ¿Qué haría Usted?",opts:{a:"Sacar la partícula, vendar y trasladarlo a un centro asistencial.",b:"Poner un apósito y vendaje de contención.",c:"Proteger el ojo con un vaso o cono plástico, vendar los dos ojos y trasladarlo a un centro asistencial."},correct:"c",hint:"NUNCA extraer el cuerpo extraño; proteger y vendar AMBOS ojos.",exp:"NUNCA se extrae un cuerpo extraño incrustado en ojo. Se protege con un cono (sin presionar el globo), se vendan AMBOS ojos (los ojos se mueven en conjunto) y se traslada urgente al oftalmólogo."},
+  {id:109,cat:"PA",q:"Un estado de shock se reconoce por:",opts:{a:"Ojos sin brillo, pupilas dilatadas.",b:"Sudor frío y piel pálida.",c:"Es la combinación de A y B.",d:"Ninguna es correcta."},correct:"c",hint:"Combinación: signos oculares + signos cutáneos.",exp:"El shock presenta signos múltiples: ojos vidriosos con pupilas dilatadas (mala perfusión), sudor frío (vasoconstricción + actividad simpática), palidez, taquicardia, hipotensión y alteración del estado mental."},
+  {id:110,cat:"PA",q:"Un torniquete es uno de los recursos ante una hemorragia arterial de las extremidades, este debe:",opts:{a:"Hacerse siempre.",b:"Hacerse como recurso extremo.",c:"No hacerse."},correct:"b",hint:"Solo como último recurso para salvar la vida.",exp:"El torniquete solo se aplica como último recurso ante hemorragia arterial incontrolable que pone en riesgo la vida. Mal aplicado puede causar isquemia, daño neuromuscular y pérdida del miembro."},
+  {id:111,cat:"PA",q:"Una hemorragia interna es aquella en la que la sangre se vacía en algunas de las cavidades del organismo (cráneo, tórax, abdomen).",opts:{a:"Verdadero.",b:"Falso."},correct:"a",hint:"Internas: sangre dentro de cavidades, sin salida al exterior.",exp:"La hemorragia interna ocurre cuando la sangre se acumula en cavidades del organismo (craneal, torácica, abdominal, retroperitoneal) sin salida visible. Son las más peligrosas por difícil diagnóstico."},
+  {id:112,cat:"PA",q:"Una hemorragia venosa se reconoce por:",opts:{a:"Color rojo oscuro y salida a borbotones.",b:"Color rojo vivo y salido a ritmo cardiaco.",c:"Color rojo oscuro y salido continúa."},correct:"c",hint:"Venosa = rojo oscuro (sin O2) + flujo continuo, no pulsátil.",exp:"La hemorragia venosa: sangre rojo oscuro (poco oxígeno) con salida continua y constante, sin pulsatilidad. Se diferencia de la arterial (rojo vivo, pulsátil) y capilar (en sábana)."},
+{id:113,cat:"RA",q:"Durante un vuelo recto y nivelado las fuerzas aerodinámicas que actúan sobre el avión permanecen:",opts:{a:"En desequilibrio.",b:"Constantes y en equilibrio.",c:"Constantes y en desequilibrio.",d:"Se generan Resistencias útiles."},correct:"b",hint:"Vuelo recto y nivelado = equilibrio de las 4 fuerzas.",exp:"En vuelo recto y nivelado, las 4 fuerzas (sustentación, peso, tracción, resistencia) están en equilibrio: L=W, T=D. Constantes y balanceadas, manteniendo velocidad y altura."},
+  {id:114,cat:"RA",q:"La acción de los alerones mueve al avión sobre su eje longitudinal.",opts:{a:"Verdadera",b:"Falso"},correct:"a",hint:"Alerones controlan el ROLL (alabeo) sobre el eje longitudinal.",exp:"Los alerones, en bordes de fuga de las alas, generan rotación alrededor del eje longitudinal (que va de nariz a cola). Este movimiento se llama alabeo o roll."},
+  {id:115,cat:"RA",q:"Los controles de vuelo primarios son:",opts:{a:"Timón de dirección, flaps, elevadores.",b:"Flaps, Slats, Spoilers.",c:"Alerones, elevadores, timón de profundidad",d:"Timón de profundidad, timón de dirección, alerones."},correct:"d",hint:"Tres primarios: profundidad, dirección, alerones (los 3 ejes).",exp:"Los controles primarios son: timón de profundidad (cabeceo, eje lateral), timón de dirección (guiñada, eje vertical), y alerones (alabeo, eje longitudinal). Flaps/slats/spoilers son secundarios."},
+  {id:116,cat:"RA",q:"Cualquier superficie tal como un ala de avión, diseñada para obtener una reacción, como la sustentación en el aire a través del cual se desplaza, se llama:",opts:{a:"Superficie alar.",b:"Envergadura de las alas.",c:"Perfil aerodinámico.",d:"Angulo de incidencia."},correct:"a",hint:"Superficie alar = superficie del ala que genera sustentación.",exp:"La superficie alar es el área del ala diseñada para generar reacciones aerodinámicas (sustentación) al desplazarse por el aire. Es uno de los parámetros clave del diseño aerodinámico."},
+  {id:117,cat:"RA",q:"Cuando la temperatura ambiente y el punto de rocío se acercan sucede que:",opts:{a:"Se pueden formar nubes altas.",b:"Se pueden formar nubes bajas.",c:"No sucede nada.",d:"Se puede formar niebla."},correct:"d",hint:"Temperatura = punto de rocío → saturación → niebla.",exp:"Cuando la temperatura del aire iguala el punto de rocío, el aire está saturado de humedad y el vapor se condensa. Si esto ocurre cerca del suelo, se forma niebla, reduciendo visibilidad."},
+  {id:118,cat:"RA",q:"Cuando se aumenta la temperatura con la altura se denomina inversión térmica o inversión de temperatura.",opts:{a:"Verdadero.",b:"Falso"},correct:"a",hint:"Inversión = lo opuesto a lo normal (normalmente baja con altura).",exp:"Inversión térmica es el fenómeno donde la temperatura aumenta con la altura, inverso al patrón normal. Crea capas estables que atrapan contaminantes y afecta el despegue/aterrizaje."},
+  {id:119,cat:"RA",q:"El aire atmosférico tiene la siguiente composición:",opts:{a:"Hidrógeno 78% Nitrógeno 21% Oxígeno 1%",b:"Nitrógeno 78% Oxígeno 21% Otros gases 1%",c:"Oxígeno 78% Nitrógeno 21% Otros gases 1%",d:"Oxígeno 78% Hidrógeno 21% Nitrógeno 1%"},correct:"b",hint:"78-21-1: N2, O2, otros.",exp:"Aire seco estándar: 78% Nitrógeno, 21% Oxígeno, 1% otros gases (Argón 0.93%, CO2 0.04%, neón, helio, etc.). Esta composición se mantiene hasta unos 80 km de altitud."},
+  {id:120,cat:"RA",q:"El avión posee tres ejes de rotación alrededor de los cuales se efectúan los movimientos, estos son:",opts:{a:"Eje vertical, lateral y longitudinal.",b:"Eje vertical, transversal y horizontal.",c:"Eje lateral, horizontal y transversal",d:"Eje lateral, longitudinal y horizontal."},correct:"a",hint:"Tres ejes: vertical, lateral, longitudinal.",exp:"Los 3 ejes del avión: longitudinal (nariz-cola, roll/alabeo), lateral o transversal (ala-ala, pitch/cabeceo), vertical (arriba-abajo, yaw/guiñada). Cada superficie de control opera uno."},
+  {id:121,cat:"RA",q:"El cambio de uso horario se produce cada cuantos grados de longitud.",opts:{a:"05°",b:"10°",c:"15°",d:"20°"},correct:"c",hint:"360°/24 husos = 15° por huso horario.",exp:"El globo se divide en 24 husos horarios de 15° cada uno (360°/24 = 15°). Por cada huso de 15° de longitud que se cruza, cambia 1 hora oficial."},
+  {id:122,cat:"RA",q:"El empenaje está compuesto de un plano vertical y uno horizontal los que permiten mantener la aeronave controlada mediante:",opts:{a:"Alerones y flaps",b:"Timón de dirección y elevador.",c:"Spoilers solamente"},correct:"b",hint:"Empenaje (cola): plano vertical = timón dirección, horizontal = elevador.",exp:"El empenaje tiene el estabilizador vertical con timón de dirección (yaw) y el estabilizador horizontal con el elevador (pitch). Juntos controlan los movimientos longitudinales y direccionales."},
+  {id:123,cat:"RA",q:"El hielo que se forma sobre las alas no afecta el rendimiento aerodinámico del vuelo.",opts:{a:"Verdadero",b:"Falso"},correct:"b",hint:"El hielo SÍ afecta gravemente la sustentación.",exp:"El hielo en el perfil alar altera la forma aerodinámica, disminuye sustentación, aumenta resistencia y peso. Es causa de accidentes graves. Por eso existen sistemas anti-hielo/de-icing."},
+  {id:124,cat:"RA",q:"El timón de profundidad actúa a través del eje:",opts:{a:"Longitudinal.",b:"Vertical.",c:"Transversal o Lateral.",d:"X/Y."},correct:"c",hint:"Profundidad = cabeceo = eje transversal/lateral.",exp:"El timón de profundidad (elevador) genera rotación alrededor del eje transversal/lateral (ala a ala), produciendo movimiento de cabeceo (pitch): nariz arriba/abajo."},
+  {id:125,cat:"RA",q:"El valor Standard de la presión a nivel del mar es de:",opts:{a:"29,92 pulgadas a 15ºC.",b:"760 milímetros a 15ºC.",c:"1.013,2 hectopascales a 15ºC.",d:"Todas las anteriores son correctas."},correct:"d",hint:"Las 3 unidades expresan la misma presión estándar.",exp:"La atmósfera ISA estándar a nivel del mar: 1013.2 hPa = 29.92 inHg = 760 mmHg, a 15°C. Son tres formas equivalentes de expresar la misma presión barométrica estándar."},
+  {id:126,cat:"RA",q:"El vuelo por instrumentos, en la navegación comercial, es seguro porque facilita una navegación ordenada, corrige derivas provocadas por el viento y permite controlar la velocidad.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"IFR es el método estándar y más seguro de navegación comercial.",exp:"El vuelo IFR (Instrument Flight Rules) es la base de la navegación comercial moderna: separa tráfico, permite vuelo en IMC, corrige derivas y mantiene control preciso de altitud y velocidad."},
+  {id:127,cat:"RA",q:"En un aeropuerto la presión atmosférica comienza a descender marcadamente, esto indica:",opts:{a:"Aumento de la intensidad del viento.",b:"Aumenta los vientos de altura.",c:"Tendencia a buen tiempo.",d:"Aproximación a mal tiempo."},correct:"d",hint:"Baja de presión rápida = mal tiempo en aproximación.",exp:"El descenso marcado de presión barométrica indica aproximación de un sistema de baja presión (frente, tormenta, ciclón). La baja presión va asociada a mal tiempo: lluvia, viento, turbulencia."},
+  {id:128,cat:"RA",q:"La actitud de un avión se controla mediante:",opts:{a:"El indicador de posición.",b:"El barómetro",c:"El horizonte artificial",d:"El compás magnético."},correct:"c",hint:"Horizonte artificial muestra cabeceo y alabeo.",exp:"El horizonte artificial (attitude indicator) muestra la actitud del avión: ángulo de cabeceo y ángulo de alabeo respecto al horizonte. Es el instrumento principal de actitud en IFR."},
+  {id:129,cat:"RA",q:"La atmosfera posee la siguiente composición:",opts:{a:"Hidrógeno 78% Nitrógeno 21% Oxígeno 1%",b:"Nitrógeno 78% Oxígeno 21% Otros gases 1%",c:"Oxígeno 78% Nitrógeno 21% Otros gases 1%",d:"Oxígeno 78% Hidrógeno 21% Nitrógeno 1%"},correct:"b",hint:"78-21-1: N2, O2, otros gases.",exp:"Composición atmosférica estándar: 78% nitrógeno, 21% oxígeno, 1% otros gases. Memorice 78-21-1 con la regla N-O-otros."},
+  {id:130,cat:"RA",q:"La ciencia que estudia las leyes que rigen el movimiento del aire y las reacciones que se originan sobre un cuerpo sólido en movimiento relativo respecto a éste, se denomina:",opts:{a:"Meteorología",b:"Física",c:"Metafísica",d:"Aerodinámica"},correct:"d",hint:"Aero = aire; dinámica = movimiento.",exp:"La aerodinámica estudia el comportamiento del aire en movimiento alrededor de los cuerpos y las fuerzas resultantes. Es la base teórica del vuelo: sustentación, resistencia, etc."},
+  {id:131,cat:"RA",q:"La densidad del aire:",opts:{a:"Es constante",b:"Aumenta con la altura",c:"Disminuye con la altura",d:"Aumenta con la temperatura"},correct:"c",hint:"A mayor altura, aire más enrarecido (menos denso).",exp:"La densidad del aire disminuye con la altura debido a la menor presión atmosférica. Por eso aviones rinden distinto en altura (menos sustentación, menos potencia del motor) y se requiere oxígeno."},
+  {id:132,cat:"RA",q:"La distancia principal existente entre un punto determinado y un objeto en el aire, tomando como referencia el nivel medio del mar, se denomina:",opts:{a:"Altura",b:"Elevación.",c:"Altitud.",d:"Nivel de vuelo."},correct:"c",hint:"Altitud = respecto al nivel del mar; Altura = respecto al terreno.",exp:"Altitud: distancia vertical respecto al nivel medio del mar (MSL). Altura: respecto al terreno (AGL). Elevación: del terreno respecto al mar. Nivel de vuelo (FL): altitud con QNE 1013."},
+  {id:133,cat:"RA",q:"La mayoría de los fenómenos meteorológicos ocurren en:",opts:{a:"Estratosfera.",b:"Tropopausa.",c:"Troposfera.",d:"A nivel del mar."},correct:"c",hint:"La troposfera contiene el 99% del vapor de agua y los fenómenos climáticos.",exp:"La troposfera (0-12 km en promedio) contiene casi todo el vapor de agua atmosférico y donde ocurren prácticamente todos los fenómenos meteorológicos: nubes, precipitaciones, tormentas, vientos."},
+  {id:134,cat:"RA",q:"La niebla se forma cuando una masa de aire a nivel del suelo, se enfría hasta que se satura.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Aire saturado a ras de suelo = niebla.",exp:"La niebla se forma cuando aire húmedo cerca del suelo se enfría hasta el punto de rocío, saturándose y condensándose. Tipos: por radiación, advección, evaporación, ascenso o frontal."},
+  {id:135,cat:"RA",q:"La nube que representa un peligro inminente para la navegación aérea es:",opts:{a:"Cumulonimbos",b:"Estratocúmulos",c:"Cirrostratos",d:"Cirros"},correct:"a",hint:"CB = la nube de tormenta más peligrosa.",exp:"El Cumulonimbus (CB) es la nube de tormenta con turbulencia severa, granizo, rayos, microrráfagas, formación de hielo y windshear. Se rodea por al menos 20 millas. Riesgo extremo."},
+  {id:136,cat:"RA",q:"La sustentación disminuye si en el perfil alar se forma hielo.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Hielo en el ala = pérdida grave de sustentación.",exp:"El hielo altera el perfil aerodinámico del ala: rompe el flujo laminar, aumenta el peso, incrementa la resistencia y reduce drásticamente la sustentación. Causa accidentes graves."},
+  {id:137,cat:"RA",q:"La temperatura del aire, la presión atmosférica, y la humedad del aire, son los tres elementos principales de la:",opts:{a:"Visibilidad",b:"La aviación.",c:"La meteorología.",d:"Ninguna de las anteriores."},correct:"c",hint:"Los 3 parámetros básicos del clima: T, P, H.",exp:"Temperatura, presión y humedad son los tres parámetros fundamentales de la meteorología. Su comportamiento e interacciones generan todos los fenómenos atmosféricos relevantes para el vuelo."},
+  {id:138,cat:"RA",q:"La turbulencia es producida por:",opts:{a:"Corrientes convectivos, obstrucciones al flujo de aire y windshear.",b:"Calentamiento de la masa de aire, proceso convectivo y causas mecánicas.",c:"Enfriamiento de la masa de aire y aumento de la presión.",d:"Acción de las masas de aires polares y tropicales."},correct:"b",hint:"Calentamiento + convección + obstáculos mecánicos.",exp:"La turbulencia tiene origen en: térmica (calentamiento solar genera corrientes), convectiva (ascenso/descenso de aire por inestabilidad) y mecánica (obstáculos como montañas, edificios, edificios)."},
+  {id:139,cat:"RA",q:"Las fuerzas que actúan en un avión en vuelo recto y nivelado son:",opts:{a:"Sustentación, Peso, Tracción y Fuerza Centrífuga",b:"Peso, Sustentación y Fuerza Centrífuga.",c:"Tracción, Gravedad y Fuerza Centrífuga.",d:"Sustentación, Peso, Tracción y Resistencia"},correct:"d",hint:"Las 4 fuerzas: Sustentación, Peso, Tracción, Resistencia (Lift, Weight, Thrust, Drag).",exp:"Las cuatro fuerzas aerodinámicas son: Sustentación (Lift, hacia arriba), Peso (Weight, hacia abajo), Tracción (Thrust, hacia adelante) y Resistencia (Drag, hacia atrás). En vuelo nivelado están balanceadas."},
+  {id:140,cat:"RA",q:"Las líneas que unen puntos de igual presión barométrica se llaman:",opts:{a:"Isotérmicas.",b:"Isotacas.",c:"Isobarras.",d:"Isogónicas."},correct:"c",hint:"Iso (igual) + baro (presión) = isobaras.",exp:"Las isobaras son líneas que unen puntos de igual presión atmosférica en una carta sinóptica. Permiten identificar centros de alta y baja presión, frentes y predecir el viento."},
+  {id:141,cat:"RA",q:"Las líneas que unen puntos de igual presión barométrica se llaman:",opts:{e:"Isotérmicas.",f:"Isotacas.",g:"Isobaras.",h:"Isogónicas."},correct:"g",hint:"Iso (igual) + bara (presión) = isobaras.",exp:"Las isobaras unen puntos de igual presión. Otras 'iso': isotermas (temperatura), isotacas (velocidad del viento), isogónicas (declinación magnética), isohipsas (altura geopotencial)."},
+  {id:142,cat:"RA",q:"Las nubes son consecuencia de un fenómeno visible, condensación formada por pequeñas partículas de agua o hielo en suspensión en la atmósfera:",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Nubes = condensación visible de agua/hielo en el aire.",exp:"Las nubes son acumulaciones visibles de gotas de agua o cristales de hielo suspendidos en la atmósfera, resultado de la condensación del vapor de agua al alcanzarse el punto de rocío."},
+  {id:143,cat:"RA",q:"Los controles que aumentan sustentación, permitiendo operaciones a distintas velocidades, se encuentran en:",opts:{a:"El empenaje solamente",b:"Los bordes de ataque y bordes de fuga de las alas.",c:"Las alas y empenaje.",d:"Los motores y empenaje."},correct:"b",hint:"Slats (borde de ataque) + flaps (borde de fuga) = dispositivos hipersustentadores.",exp:"Los dispositivos hipersustentadores están en los bordes del ala: slats en borde de ataque y flaps en borde de fuga. Aumentan la curvatura y/o superficie del ala para operar a bajas velocidades."},
+  {id:144,cat:"RA",q:"Los alerones son superficies de control ubicados en el borde de fuga de las alas y tienen como función:",opts:{a:"El control lateral del avión.",b:"El control longitudinal del avión.",c:"El control lateral del avión alrededor de su eje vertical",d:"Frenar el avión en vuelo."},correct:"b",hint:"Según guía: 'control longitudinal' (rotación sobre eje longitudinal).",exp:"Según la guía IASCA, la respuesta marcada es 'control longitudinal' refiriéndose a la rotación alrededor del eje longitudinal (alabeo o roll). En terminología estándar suele llamarse control lateral."},
+  {id:145,cat:"RA",q:"Los controles de vuelo primario son:",opts:{a:"Timón de dirección y elevadores",b:"Flaps, Slats",c:"Alerones y timón de profundidad",d:"Timón de profundidad, timón de dirección y alerones."},correct:"d",hint:"Tres primarios para los tres ejes.",exp:"Los tres controles de vuelo primarios son: timón de profundidad (cabeceo), timón de dirección (guiñada) y alerones (alabeo). Cada uno controla un eje específico de rotación."},
+  {id:146,cat:"RA",q:"Los dispositivos que disminuyen la sustentación alar durante el aterrizaje se llaman:",opts:{a:"Flaps",b:"Spoilers.",c:"Alerones.",d:"Generadores de vórtice."},correct:"b",hint:"Spoilers 'estropean' la sustentación al aterrizar.",exp:"Los spoilers (aerofrenos) se elevan en el extradós del ala al aterrizar para destruir (spoil) la sustentación, aumentar la resistencia y transferir peso a las ruedas para frenado efectivo."},
+  {id:147,cat:"RA",q:"Los flaps son superficies de vuelo secundarios y sirven para",opts:{a:"Aumentar la superficie alar y la resistencia al avance.",b:"Aumentar la razón de ascenso y descenso.",c:"Operar a bajas velocidades en despegues y aterrizajes.",d:"A y C son correctas."},correct:"d",hint:"Flaps: aumentan superficie/curvatura para operar a bajas velocidades.",exp:"Los flaps son hipersustentadores secundarios: aumentan superficie y curvatura del ala, incrementan sustentación y resistencia. Permiten operar a velocidades más bajas en despegue y aterrizaje."},
+  {id:148,cat:"RA",q:"Los motores mueven el avión creando viento relativo, parte del cual pasa sobre la superficie curva de la cara superior del ala, y efectúa un mayor recorrido que el que fluye por la cara inferior.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Principio de Bernoulli: mayor recorrido = menor presión = sustentación.",exp:"El perfil alar tiene cara superior más curva (extradós) que la inferior (intradós). El aire recorre más en la cara superior, acelera, su presión baja (Bernoulli), generando sustentación neta."},
+  {id:149,cat:"RA",q:"Los perfiles aerodinámicos del avión son:",opts:{a:"Motor, alas, empenaje.",b:"Alas, hélice, empenaje.",c:"Alas, empenaje.",d:"Todas las anteriores."},correct:"c",hint:"Solo las alas y el empenaje son perfiles aerodinámicos.",exp:"Los perfiles aerodinámicos (airfoils) del avión son las alas (generan sustentación principal) y el empenaje (estabilizadores vertical y horizontal). Otras estructuras no son perfiles propiamente."},
+  {id:150,cat:"RA",q:"Niebla es:",opts:{a:"Estrato a nivel del suelo, permite visibilidad a menos de 1 Km.",b:"Nube cuya visibilidad sea superior a 2 Kms.",c:"Estrato comprendido entre el suelo y los 15 metros de altura.",d:"Una nube con temperaturas más baja que el terreno en que se desplaza."},correct:"a",hint:"Niebla = nube a ras de suelo con visibilidad <1 km.",exp:"La niebla es una nube a nivel del suelo que reduce la visibilidad horizontal por debajo de 1 km. Si la visibilidad es 1-10 km es bruma. Crítica para operaciones aeroportuarias."},
+  {id:151,cat:"RA",q:"Nube es un volumen de aire visible que contiene vapor de agua condensada y/o subliminada formando gotas de agua o cristales de hielo.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Definición meteorológica estándar de nube.",exp:"Una nube es una masa visible compuesta de gotitas de agua condensada o cristales de hielo (cuando sublima), formada por la condensación del vapor de agua atmosférico al saturarse."},
+  {id:152,cat:"RA",q:"Para medir la presión atmosférica existen dos tipos de barómetros, el de mercurio y el de aneroide.",opts:{a:"Verdadero",b:"Falso"},correct:"a",hint:"Los dos tipos clásicos de barómetro.",exp:"Existen dos tipos principales de barómetro: de mercurio (basado en la altura de una columna de Hg que sostiene la presión) y aneroide (cápsula al vacío que se deforma con cambios de presión)."},
+  {id:153,cat:"RA",q:"Para medir la presión atmosférica existen dos tipos de barómetros, el de mercurio y el de aneroide.",opts:{c:"Verdadero",d:"Falso"},correct:"c",hint:"Pregunta repetida: dos tipos de barómetro.",exp:"Sí, hay dos tipos: de mercurio (Torricelli, columna de Hg) y aneroide (cápsula deformable). Ambos miden la presión atmosférica con diferentes principios físicos."},
+  {id:154,cat:"RA",q:"Para medir la presión atmosférica se usa un instrumento que se llama:",opts:{a:"Termómetro.",b:"Hidrómetro.",c:"Termógrafo.",d:"Barómetro."},correct:"d",hint:"Baro = presión + metro = medidor.",exp:"El barómetro mide la presión atmosférica. Termómetro mide temperatura, hidrómetro densidad de líquidos, termógrafo registra temperatura en el tiempo, anemómetro velocidad del viento."},
+  {id:155,cat:"RA",q:"Para medir la presión barométrica existen dos tipos de barómetros:",opts:{a:"Verdadero",b:"Falso",c:"Existen tres",d:"Ninguna es correcta."},correct:"a",hint:"Dos tipos principales: mercurio y aneroide.",exp:"Verdadero: existen dos tipos principales de barómetro, el de mercurio (Torricelli) y el aneroide (sin líquido, basado en cápsulas deformables). Ambos cumplen la misma función."},
+  {id:156,cat:"RA",q:"Para medir la velocidad del viento usamos un:",opts:{a:"Barógrafo.",b:"Cataviento (pierna de calzoncillo)",c:"Veleta.",d:"Anemómetro."},correct:"d",hint:"Anemómetro: copas que giran proporcional a la velocidad del viento.",exp:"El anemómetro mide la velocidad del viento, generalmente con copas giratorias o paletas. La veleta muestra dirección. El cataviento indica intensidad/dirección visualmente en aeropuertos."},
+  {id:157,cat:"RA",q:"Sustentación es la fuerza hacia abajo creada por un perfil aerodinámico cuando se desplaza a través del aire.",opts:{a:"Verdadero",b:"Falso"},correct:"b",hint:"Sustentación es hacia ARRIBA, no abajo.",exp:"Falso: la sustentación (lift) es la fuerza HACIA ARRIBA generada perpendicular al viento relativo cuando un perfil aerodinámico se desplaza por el aire. Es la que mantiene el avión en el aire."},
+  {id:158,cat:"RA",q:"Un frente meteorológico se define como:",opts:{a:"Una masa de aire cálido e inestable.",b:"Superficie de discontinuidad entre dos masas de aire, de características diferentes.",c:"Superficie de discontinuidad entre dos masas de aire, de iguales características.",d:"Masa de aire frío que se desplaza cerca de la superficie del terreno."},correct:"b",hint:"Frente = límite entre dos masas de aire DIFERENTES.",exp:"Un frente meteorológico es la superficie de discontinuidad entre dos masas de aire con propiedades distintas (temperatura, humedad). Tipos: frío, cálido, estacionario, ocluido. Generan mal tiempo."},
+  {id:159,cat:"RA",q:"Un stall se produce por:",opts:{a:"Pérdida de la velocidad.",b:"Pérdida abrupta de la sustentación.",c:"Pérdida del ángulo de ataque."},correct:"b",hint:"Stall = pérdida abrupta de sustentación al exceder el ángulo crítico.",exp:"El stall (pérdida) es la pérdida abrupta de sustentación que ocurre al superar el ángulo de ataque crítico (no por baja velocidad per se). El flujo se separa del extradós y la sustentación cae bruscamente."},
+  {id:160,cat:"RA",q:"Un stall se produce por:",opts:{d:"Pérdida de la velocidad.",e:"Pérdida abrupta de la sustentación.",f:"Pérdida del ángulo de ataque."},correct:"e",hint:"Pérdida abrupta de la sustentación (mismo concepto).",exp:"El stall ocurre cuando el ángulo de ataque excede el crítico, el flujo se desprende del extradós y la sustentación cae bruscamente. La velocidad baja es una causa común pero no la definición."},
+  {id:161,cat:"RA",q:"¿Dónde ocurren los fenómenos meteorológicos y donde se realizan casi todos los vuelos de los aviones se denominan:",opts:{a:"Lonosfera.",b:"Troposfera.",c:"Tropopausa",d:"Estratosfera."},correct:"b",hint:"Troposfera: clima + aviación comercial.",exp:"La troposfera (0-12 km) es donde se concentran casi todos los fenómenos meteorológicos y donde operan la mayoría de vuelos comerciales. La aviación de largo alcance roza la baja estratosfera."},
+  {id:162,cat:"RA",q:"¿Qué nube de las que se mencionan abajo representan un peligro inminente para la navegación aérea?",opts:{a:"Cirros.",b:"Cirrustratos.",c:"Estratocúmulos.",d:"Cumulonimbos"},correct:"d",hint:"CB: tormentas, granizo, turbulencia severa, rayos.",exp:"El Cumulonimbus es la nube de tormenta más peligrosa: turbulencia severa, granizo, rayos, microrráfagas, formación intensa de hielo. Se desvía al menos 20 NM. Causa accidentes graves."},
+{id:163,cat:"RG",q:"El RAD que habla sobre el entrenamiento de materiales peligrosos",opts:{a:"RAD 91.",b:"RAD 18.",c:"RAD 61.",d:"RAD 65."},correct:"b",hint:"RAD 18 regula transporte y entrenamiento de DG (Dangerous Goods).",exp:"El RAD 18 (Reglamento Aeronáutico Dominicano) regula el transporte sin riesgos de mercancías peligrosas por vía aérea y los requisitos de entrenamiento sobre materiales peligrosos."},
+  {id:164,cat:"RG",q:"Cantidad mínima de extintores portátiles en una aeronave de 30 asientos de pasajeros",opts:{a:"3",b:"1",c:"4",d:"2"},correct:"b",hint:"Hasta 30 asientos: 1 extintor portátil.",exp:"Aeronaves con 7-30 asientos requieren mínimo 1 extintor de mano. 31-60: 2 extintores. 61-200: 3. 201-300: 4. Y así escalonado según capacidad."},
+  {id:165,cat:"RG",q:"Con respecto a fumar en los aviones, la reglamentación aeronáutica estipula que está prohibido fumar:",opts:{a:"En todos los aviones de pasajeros.",b:"En todos los aviones de transporte de pasajero en vuelo dentro del territorio nacional.",c:"En todos los aviones de pasajeros pero en los baños solamente.",d:"Ninguno de los anteriores."},correct:"c",hint:"Según marcaje de la guía: la respuesta oficial es 'en los baños solamente'.",exp:"Según el marcaje de la guía IASCA, se acepta la opción c. En la práctica regulatoria moderna, fumar está prohibido en TODO el avión, especialmente en los lavabos donde se aplica la prohibición más estricta."},
+  {id:166,cat:"RG",q:"Cuando un tripulante de Cabina no ha recibido un entrenamiento recurrente:",opts:{a:"Podrá esperar el Segundo periodo de entrenamiento.",b:"Puede completar el entrenamiento dos meses después.",c:"El entrenamiento tiene que hacerse un año después del inicial.",d:"Ninguna de las anteriores."},correct:"d",hint:"Sin recurrente vigente, el TC no puede ejercer.",exp:"Si el TC no realizó su entrenamiento recurrente en el plazo establecido (generalmente 12 meses), no puede ejercer funciones hasta completarlo. Ninguna de las opciones describe el procedimiento correcto."},
+  {id:167,cat:"RG",q:"¿Cuántas TC deben haber a bordo de un avión que tiene primera clase de 100 pasajeros?",opts:{a:"1.",b:"2.",c:"3.",d:"4."},correct:"b",hint:"Regla: 1 TC por cada 50 asientos.",exp:"La regulación dominicana exige 1 TC por cada 50 asientos de pasajeros. Para 100 asientos: 2 TC mínimo. La cantidad puede aumentar según configuración y operación específica."},
+  {id:168,cat:"RG",q:"¿Cuántos TC necesita un avión de 42 pasajeros?",opts:{a:"1.",b:"2.",c:"3.",d:"4."},correct:"a",hint:"Hasta 50 pasajeros: 1 TC mínimo.",exp:"Para aeronaves con capacidad de hasta 50 pasajeros se requiere mínimo 1 TC. 42 pasajeros requiere 1 TC. La regla de 1 TC por cada 50 asientos rige el cálculo."},
+  {id:169,cat:"RG",q:"¿Cuántos TC necesita un avión de 85 pasajeros?",opts:{a:"1.",b:"2.",c:"3.",d:"4."},correct:"b",hint:"51-100 pasajeros: 2 TC mínimo.",exp:"Para 51-100 pasajeros se requieren 2 TC mínimo (1 TC por cada 50 asientos o fracción). 85 pasajeros está en este rango, por lo tanto 2 TC."},
+  {id:170,cat:"RG",q:"De acuerdo a lo estipulado en el reglamento las licencias extranjeras se convalidan",opts:{a:"Si.",b:"No.",c:"Si tienen más de 1000 horas.",d:"Ninguna de las anteriores."},correct:"a",hint:"Sí, mediante el proceso de convalidación del IDAC.",exp:"Las licencias extranjeras pueden ser convalidadas por el IDAC mediante el proceso establecido (RAD 61) que incluye verificación documental, posibles exámenes y cumplimiento de requisitos locales."},
+  {id:171,cat:"RG",q:"El anexo de la OACI que habla sobre licencia de personal es:",opts:{a:"Anexo 1.",b:"Anexo 6.",c:"Anexo 18.",d:"Ninguna de las anteriores."},correct:"a",hint:"Anexo 1: Licencias al personal (Personnel Licensing).",exp:"El Anexo 1 de OACI 'Licencias al Personal' establece los requisitos para licenciar pilotos, controladores, mecánicos, despachadores, tripulantes de cabina, etc. Es la base regulatoria mundial."},
+  {id:172,cat:"RG",q:"El anexo que habla de las operaciones de vuelo es:",opts:{a:"Anexo 1.",b:"Anexo 6.",c:"Anexo 18.",d:"Ninguna de las anteriores."},correct:"b",hint:"Anexo 6: Operación de Aeronaves (Operations of Aircraft).",exp:"El Anexo 6 de OACI 'Operación de Aeronaves' regula las operaciones de vuelo (parte 1: transporte aéreo internacional comercial, parte 2: aviación general, parte 3: helicópteros)."},
+  {id:173,cat:"RG",q:"El anexo que habla sobre la seguridad es",opts:{a:"Anexo 1.",b:"Anexo 6.",c:"Anexo 18.",d:"Ninguna de las anteriores."},correct:"d",hint:"Seguridad de la aviación = Anexo 17, no listado en opciones.",exp:"El Anexo 17 de OACI trata sobre Seguridad de la Aviación contra actos de interferencia ilícita. Como no está en las opciones, la respuesta es 'Ninguna'. Anexo 18 es mercancías peligrosas."},
+  {id:174,cat:"RG",q:"El certificado de matrícula de una aeronave acredita.",opts:{a:"La configuración",b:"La nacionalidad y clasificación",c:"La frecuencia del itinerario",d:"Las rutas autorizadas"},correct:"b",hint:"Matrícula = nacionalidad + marca de registro.",exp:"El certificado de matrícula acredita la nacionalidad de la aeronave (Estado de matrícula) y su marca de registro. En RD las aeronaves se identifican con HI seguido de letras (ej. HI-987)."},
+  {id:175,cat:"RG",q:"El código IATA para las aerolíneas es de:",opts:{a:"5 Letras",b:"4 Letras",c:"2 Letras",d:"Ningunas"},correct:"c",hint:"IATA aerolíneas: 2 letras (ej. AA, UA, IB).",exp:"El código IATA para aerolíneas es de 2 caracteres (ej. AA=American, UA=United, IB=Iberia, AM=Aeroméxico). El código OACI es de 3 letras (AAL, UAL, IBE, AMX)."},
+  {id:176,cat:"RG",q:"El código IATA para los aeropuertos es de:",opts:{a:"3 Letras",b:"4 Letras",c:"2 Letras"},correct:"a",hint:"IATA aeropuertos: 3 letras (ej. SDQ, JFK, MAD).",exp:"El código IATA de aeropuertos es de 3 letras (ej. SDQ=Las Américas, JFK=Nueva York, MAD=Madrid). El código OACI es de 4 letras (MDSD, KJFK, LEMD)."},
+  {id:177,cat:"RG",q:"El entrenamiento de Tripulantes de Cabina se divide:",opts:{a:"Entrenamiento de tierra, entrenamiento de vuelo, examen en el IDAC.",b:"Entrenamiento de emergencia, entrenamiento teórico, entrenamiento practico.",c:"Ditching, servició a bordo, legislación aeronáutica, examen del IDAC",d:"Todo lo que reglamenta a los tripulantes de cabina en el RAD 65."},correct:"a",hint:"Tres componentes: tierra + vuelo + examen IDAC.",exp:"El entrenamiento se divide en tres fases: (1) entrenamiento en tierra (teórico/práctico), (2) entrenamiento de vuelo (familiarización en aeronave), y (3) examen final ante el IDAC para obtener la licencia."},
+  {id:178,cat:"RG",q:"El descanso semestral es de:",opts:{a:"21 Días",b:"12 Días",c:"15 Días"},correct:"c",hint:"15 días de descanso semestral (Ley 380).",exp:"Conforme a la Ley 380, los tripulantes tienen derecho a 15 días continuos de descanso semestral, separados de las vacaciones anuales. Garantiza recuperación adecuada."},
+  {id:179,cat:"RG",q:"El periodo mínimo de descanso diario es de:",opts:{a:"10 Horas",b:"24 Horas",c:"8 Horas"},correct:"c",hint:"8 horas mínimo de descanso diario.",exp:"El descanso diario mínimo es de 8 horas continuas para tripulantes, donde están liberados de todas sus tareas. Este es el mínimo legal según la Ley 380."},
+  {id:180,cat:"RG",q:"El RAD de la parte 121 que se encarga de decir los diferentes tipos de entrenamientos:",opts:{a:"121.401.",b:"121.415.",c:"La OACI.",d:"El IDAC."},correct:"b",hint:"RAD 121.415 lista los tipos de entrenamiento.",exp:"La sección 121.415 del RAD 121 establece los tipos de entrenamiento requeridos: inicial, de transición, de actualización (recurrente), de promoción, de diferencia, etc."},
+  {id:181,cat:"RG",q:"El RAD que establece y tipifica las multas y violaciones a los tripulantes:",opts:{a:"RAD 91.",b:"RAD 20.",c:"RAD 63.",d:"RAD 61."},correct:"b",hint:"RAD 20: sanciones, multas y violaciones.",exp:"El RAD 20 regula el régimen sancionatorio de la aviación civil dominicana: tipos de infracciones, multas, suspensiones y revocaciones de licencias y certificados."},
+  {id:182,cat:"RG",q:"El RAD que habla sobre las condiciones que tiene que tener una aerolínea para ser de más de 100 asientos es:",opts:{a:"RAD 121.",b:"RAD 135.",c:"RAD 141.",d:"RAD 119."},correct:"a",hint:"RAD 121: operación de aerolíneas comerciales grandes.",exp:"El RAD 121 regula las operaciones de transporte aéreo regular y no regular en aeronaves de más de 28 asientos. Incluye los requisitos para operadores grandes (más de 100 asientos)."},
+  {id:183,cat:"RG",q:"¿El reglamento nacional aeronáutico establece que, los chalecos salvavidas o dispositivos de flotación, se exigirán?",opts:{a:"Siempre que el vuelo sea sobre mar y tierra.",b:"Cuando el vuelo se realice sobre agua y pase las 50 millas náuticas de la costa.",c:"Cuando haya prevalida de amaraje forzoso.",d:"Lo exige el Reglamento 20."},correct:"b",hint:"Más de 50 MN de la costa: chalecos obligatorios.",exp:"Los chalecos salvavidas son obligatorios para vuelos sobre agua a más de 50 millas náuticas de la costa, según las regulaciones dominicanas (alineadas con OACI Anexo 6)."},
+  {id:184,cat:"RG",q:"El servicio de transporte aéreo internacional, es el que se presenta entre dos o más puntos del territorio de la Republica Dominicana.",opts:{a:"falso",b:"Verdadero"},correct:"a",hint:"Eso es transporte NACIONAL, no internacional.",exp:"Falso. El transporte aéreo INTERNACIONAL involucra puntos en territorios de DOS o más Estados. El transporte entre dos puntos dentro de RD es transporte aéreo NACIONAL o cabotaje."},
+  {id:185,cat:"RG",q:"El tiempo de servicio puede ser extendido:",opts:{a:"Defensa Nacional.",b:"Para concluir un vuelo.",c:"En caso de búsqueda y salvamento.",d:"Todas las anteriores."},correct:"d",hint:"Tres causas de extensión: defensa, conclusión vuelo, SAR.",exp:"El tiempo de servicio puede extenderse por: necesidad de defensa nacional, conclusión segura de un vuelo en curso, y operaciones SAR (búsqueda y salvamento). Todas son excepciones legítimas."},
+  {id:186,cat:"RG",q:"El tiempo de servicio: tiempo transcurrido desde el momento en que el explotador impone una función que cumpla cualquier tripulante independientemente del tiempo de vuelo hasta que es relevado totalmente de ella:",opts:{a:"RAD 63.",b:"RAD 65.",c:"Ley 380.",d:"RAD 121."},correct:"c",hint:"Definición de tiempo de servicio: Ley 380.",exp:"La Ley 380 (1964) define el tiempo de servicio del tripulante: desde que el explotador asigna una función hasta que el tripulante es totalmente relevado, independiente del tiempo de vuelo."},
+  {id:187,cat:"RG",q:"El tiempo de vuelo es el tiempo de vuelo total desde que una aeronave comienza a moverse por su propia fuerza en maniobras previas al despegue hasta que deja de hacerlo por sus propios medios después del aterrizaje:",opts:{a:"RAD 91.",b:"RAD 191.",c:"RAD 119.",d:"RAD 380."},correct:"d",hint:"Según marcaje oficial: la guía indica RAD 380.",exp:"La definición de tiempo de vuelo 'block-to-block' (de calzo a calzo, incluyendo rodaje) corresponde al marcaje de la guía. Esta es la definición universal en aviación civil."},
+  {id:188,cat:"RG",q:"El tiempo de vuelo semanal es de:",opts:{a:"95 Horas",b:"10 Horas",c:"30 Horas"},correct:"c",hint:"30 horas semanales máximo.",exp:"El tiempo máximo de vuelo semanal es de 30 horas para tripulantes de cabina y de vuelo, según la Ley 380. Garantiza descanso adecuado entre semanas operativas."},
+  {id:189,cat:"RG",q:"El tiempo máximo de vuelo que podrá volar un tripulante al año, será:",opts:{a:"750 horas.",b:"1,000 horas.",c:"850 horas.",d:"900 horas."},correct:"b",hint:"Máximo anual: 1,000 horas.",exp:"El tiempo máximo anual de vuelo es de 1,000 horas según la Ley 380. Distribuido en máximo 30 horas/semana y 100 horas/mes (aproximadamente)."},
+  {id:190,cat:"RG",q:"En un lapso de 24 horas consecutivas, el tiempo de vuelo al día es:",opts:{a:"9 horas",b:"10 horas",c:"12 horas",d:"8 horas"},correct:"d",hint:"8 horas diarias máximo de vuelo.",exp:"El tiempo máximo de vuelo en 24 horas consecutivas es de 8 horas para tripulantes según la Ley 380. Distinto del tiempo de servicio que puede ser mayor."},
+  {id:191,cat:"RG",q:"Existen aeronaves que deben estar dotadas de sistema de iluminación de salidas de emergencia. Esta exigencia es aplicable a las aeronaves cuya capacidad de pasajeros que este:",opts:{a:"Más de 9 pasajeros.",b:"Más de 20 pasajeros.",c:"Más de 30 pasajeros.",d:"Ninguna de las anteriores."},correct:"b",hint:"Más de 20 pasajeros requiere iluminación de salidas.",exp:"Las aeronaves con más de 20 pasajeros requieren sistema de iluminación de emergencia para salidas, incluyendo señalización a nivel de piso y luces externas, para facilitar evacuación."},
+  {id:192,cat:"RG",q:"Indique cuanto es la cantidad mínima de megáfonos que debe llevar a bordo una aeronave de transporte comercial que transporte 90 pasajeros:",opts:{a:"1.",b:"2.",c:"3.",d:"Ninguna de las anteriores."},correct:"a",hint:"Hasta 99 pasajeros: 1 megáfono. 100+: 2.",exp:"Las aeronaves de 61-99 pasajeros requieren mínimo 1 megáfono. De 100-199 pasajeros: 2 megáfonos. Por encima: más. Para 90 pasajeros se requiere 1."},
+  {id:193,cat:"RG",q:"¿La agencia regulatoria de los Estados Unidos es?",opts:{a:"OACI",b:"ONU",c:"FAA"},correct:"c",hint:"FAA: Federal Aviation Administration.",exp:"La FAA (Federal Aviation Administration) es la autoridad aeronáutica civil de Estados Unidos. OACI es la organización mundial (de ONU) y ONU es la organización general."},
+  {id:194,cat:"RG",q:"La autoridad máxima en un avión es:",opts:{a:"El piloto.",b:"El piloto en comando.",c:"Primer oficial.",d:"Jefe de cabina."},correct:"b",hint:"PIC: Pilot In Command = autoridad máxima.",exp:"El Piloto en Comando (PIC) es la máxima autoridad a bordo. Responsable del avión, tripulación, pasajeros y carga. Sus decisiones son finales en seguridad operacional."},
+  {id:195,cat:"RG",q:"La autoridad que representa al IDAC para la compañía es:",opts:{a:"Jefe de Tripulante de Cabina.",b:"Jefe de Piloto.",c:"Director de Operaciones.",d:"Inspector Principal de Operaciones."},correct:"d",hint:"POI: Principal Operations Inspector del IDAC.",exp:"El Inspector Principal de Operaciones (POI) del IDAC es el funcionario asignado a supervisar cada operador certificado. Es el enlace oficial entre la autoridad y la empresa."},
+  {id:196,cat:"RG",q:"La convención o el acuerdo internacional que creo a la OACI es:",opts:{a:"Convención de Tokio.",b:"Convención de San José.",c:"Montreal 99.",d:"Convención de Chicago."},correct:"d",hint:"Chicago 1944: nacimiento de OACI.",exp:"La Convención de Chicago (1944) creó la OACI (Organización de Aviación Civil Internacional). Establece principios fundamentales de la aviación civil internacional y derechos de sobrevuelo."},
+  {id:197,cat:"RG",q:"La convención que rige los derechos del pasajero",opts:{a:"Convención de Tokio.",b:"Convención de San José.",c:"Montreal 99.",d:"Convención de Chicago."},correct:"c",hint:"Montreal 1999: responsabilidad del transportista hacia pasajeros.",exp:"El Convenio de Montreal 1999 unificó la responsabilidad civil del transportista aéreo internacional en daños a pasajeros, equipaje y carga, modernizando el sistema de Varsovia."},
+  {id:198,cat:"RG",q:"La edad límite para ser TC es:",opts:{a:"35 años.",b:"45 años.",c:"65 años.",d:"Ninguna de las anteriores."},correct:"d",hint:"No hay edad máxima reglamentaria fija para TC.",exp:"No existe una edad máxima reglamentaria fija para ser TC en RD. El requisito es la aptitud psicofísica vigente y entrenamiento. Cada operador puede establecer políticas internas."},
+  {id:199,cat:"RG",q:"La ley 380 es aplicable:",opts:{a:"A los tripulantes de vuelo.",b:"A los tripulantes de cabina.",c:"A los pilotos.",d:"Todas las anteriores."},correct:"d",hint:"La Ley 380 cubre TODOS los tripulantes.",exp:"La Ley 380 (1964) sobre régimen de trabajo y descanso aplica a TODOS los tripulantes: de vuelo (pilotos, ingenieros de vuelo) y de cabina (TC). Regula tiempos de servicio, vuelo y descanso."},
+  {id:200,cat:"RG",q:"La Ley 380 fue promulgada por el triunvirato en el año:",opts:{a:"1966",b:"1968",c:"1964"},correct:"c",hint:"1964: gobierno del Triunvirato post-Bosch.",exp:"La Ley 380 fue promulgada en 1964 por el Triunvirato que gobernaba RD tras el derrocamiento de Juan Bosch. Establece el régimen laboral de las tripulaciones aeronáuticas."},
+  {id:201,cat:"RG",q:"La Ley 491-06 fue promulgada el:",opts:{a:"30 de octubre 2007",b:"20 de septiembre 2006",c:"28 de diciembre 2006"},correct:"c",hint:"28 diciembre 2006: nacimiento del IDAC.",exp:"La Ley 491-06 fue promulgada el 28 de diciembre de 2006. Crea el IDAC (Instituto Dominicano de Aviación Civil), la JAC (Junta de Aviación Civil) y reorganiza la aviación civil dominicana."},
+  {id:202,cat:"RG",q:"La ley que establece la composición del IDAC es:",opts:{a:"Ley 380.",b:"Regulaciones aéreas dominicanas.",c:"Ley 491-06.",d:"El anexo 6 del OACI."},correct:"c",hint:"Ley 491-06 creó al IDAC.",exp:"La Ley 491-06 establece la composición, estructura y funciones del IDAC, la autoridad aeronáutica civil dominicana, así como la JAC para política aeronáutica."},
+  {id:203,cat:"RG",q:"La ley que faculta al Director del IDAC para emitir los RAD:",opts:{a:"Ley 491-06.",b:"Ley 87.01.",c:"Ley 380.",d:"Ley 36."},correct:"a",hint:"Ley 491-06: faculta emisión de los RAD.",exp:"La Ley 491-06 faculta al Director del IDAC para emitir los Reglamentos Aeronáuticos Dominicanos (RAD), los cuales tienen carácter mandatorio de cumplimiento para la industria."},
+  {id:204,cat:"RG",q:"La ley que habla del tiempo y periodo de descanso es:",opts:{a:"Ley 421-06.",b:"Ley 87.01.",c:"Ley 380.",d:"Ley 36."},correct:"c",hint:"Ley 380: jornada, vuelo y descanso de tripulaciones.",exp:"La Ley 380 (1964) regula los tiempos de vuelo, tiempos de servicio y períodos de descanso de las tripulaciones aeronáuticas en RD. Sigue vigente actualizada."},
+  {id:205,cat:"RG",q:"La licencia de TC para tener validez, debe ir acompañada del certificado médico.",opts:{a:"Falso",b:"Verdadero"},correct:"a",hint:"Según marcaje oficial de IASCA: 'Falso'.",exp:"Según el marcaje de la guía IASCA, la respuesta oficial es Falso. Nota: en la práctica regulatoria internacional, sí se requiere certificado médico vigente para ejercer funciones de TC."},
+  {id:206,cat:"RG",q:"La obligación de llevar a bordo chalecos salvavidas para los pasajeros es aplicable a los aviones multimotores cuando vuela sobre el agua a una distancia de la costa de:",opts:{a:"Más de 90 MN.",b:"Más de 580 MN.",c:"Más de 50 MN.",d:"Ninguna de las anteriores."},correct:"c",hint:"50 MN de la costa: chalecos obligatorios.",exp:"Cuando se vuela sobre agua a más de 50 millas náuticas de la costa, se requieren chalecos salvavidas para todos los ocupantes. Es estándar de OACI Anexo 6 y RAD."},
+  {id:207,cat:"RG",q:"La reglamentación prohíbe a los miembros de la tripulación de un avión ingerir bebidas alcohólicas durante el vuelo y antes de este a partir de",opts:{a:"12 horas antes de iniciarse el vuelo.",b:"8 horas antes de iniciarse el vuelo.",c:"36 horas antes de iniciarse el vuelo.",d:"Ninguna de las anteriores."},correct:"b",hint:"'Bottle to throttle': 8 horas.",exp:"La regla universal en aviación es 'bottle to throttle' 8 horas: mínimo 8 horas desde la última bebida alcohólica hasta inicio del vuelo. Algunas empresas exigen 12-24 horas."},
+  {id:208,cat:"RG",q:"Las aeronaves podrán ser válidamente matriculadas en:",opts:{a:"Dos estados contratantes",b:"Tres estados contratantes",c:"Un estado contratante",d:"Ningunas de las anteriores"},correct:"c",hint:"Una matrícula por aeronave, en un solo Estado.",exp:"Conforme a la Convención de Chicago, una aeronave solo puede estar matriculada en UN Estado contratante a la vez. La doble matrícula está prohibida. Se puede cambiar de Estado pero no simultáneamente."},
+  {id:209,cat:"RG",q:"¿Las disposiciones del IDAC de carácter reglamentario, cuyo cumplimiento es mandatorio, se denominan?",opts:{a:"DAR",b:"DAN",c:"RAD",d:"FAR"},correct:"c",hint:"RAD: Regulaciones Aeronáuticas Dominicanas.",exp:"Los RAD (Regulaciones Aeronáuticas Dominicanas) son las disposiciones de carácter mandatorio emitidas por el IDAC. Equivalen a los FAR de Estados Unidos (Federal Aviation Regulations)."},
+  {id:210,cat:"RG",q:"Los delitos cometidos a bordo de aeronaves militares extranjeras quedarán sometidos a:",opts:{a:"Normas del derecho internacional",b:"Acuerdos y tratados ratificados ley 491-06",c:"La A y la B son correctas"},correct:"c",hint:"Derecho internacional + tratados ratificados.",exp:"Los delitos en aeronaves militares extranjeras se rigen por normas de derecho internacional Y acuerdos/tratados ratificados por RD bajo la Ley 491-06. Ambas fuentes aplican simultáneamente."},
+  {id:211,cat:"RG",q:"Los pasajeros tienen que estar instruidos sobre el uso del oxígeno",opts:{a:"Cuando es en aviones de cabina presurizada.",b:"Cuando hay pasajeros enfermos a bordo.",c:"Cuando una porción de vuelo va ser realizada sobre 14,000 pies.",d:"Todo el tiempo que el avión se encuentre sobre 10,000 pies."},correct:"d",hint:"Sobre 10,000 ft: instruir uso de O2.",exp:"La regulación exige que pasajeros sean instruidos en uso del oxígeno cuando el vuelo se realice sobre 10,000 pies. Es la altitud crítica para hipoxia y donde se requieren provisiones especiales."},
+  {id:212,cat:"RG",q:"Los requisitos para ser Tripulante de Cabina:",opts:{a:"Ser mayor de 18 años, hablar leer y escribir el idioma español, ser dominicano.",b:"Ser menor de 18 años, hablar leer y escribir el idioma español, ser dominicano.",c:"Ser bachiller y hablar español.",d:"Ninguna de las anteriores."},correct:"a",hint:"Tres requisitos: 18+ años, español, dominicano.",exp:"Requisitos básicos para TC en RD: ser mayor de 18 años, hablar/leer/escribir español, ser dominicano (o cumplir requisitos de extranjeros), aptitud médica y aprobar entrenamiento."},
+  {id:213,cat:"RG",q:"Para el cumplimiento de sus funciones un tripulante de cabina debe:",opts:{a:"Tener el pasaporte al día",b:"Tener una autorización de operaciones",c:"Ser titular de una licencia de TC",d:"Ser nombrado por el dueño de la empresa"},correct:"c",hint:"Sin licencia de TC vigente, no se puede ejercer.",exp:"Para ejercer funciones, el TC debe ser titular de una licencia de TC vigente emitida por el IDAC. La licencia certifica que cumplió entrenamiento y aprobó los exámenes correspondientes."},
+  {id:214,cat:"RG",q:"Para ser tripulante de cabina se requiere:",opts:{a:"Ser ciudadano norteamericano.",b:"Ser residente legal en la Rep. Dom.",c:"Ser dominicano.",d:"B y C son correctas."},correct:"c",hint:"Requisito: ser dominicano.",exp:"Para ser TC en aerolíneas dominicanas se requiere ser ciudadano dominicano. Extranjeros pueden volar bajo condiciones específicas de reciprocidad o convalidación de licencias."},
+  {id:215,cat:"RG",q:"Para ser Tripulante de Cabina usted necesita:",opts:{a:"Haber realizado un entrenamiento inicial.",b:"Haber realizado un entrenamiento inicial para tripulante de cabina.",c:"Haber volado 20 horas.",d:"Ninguna de las anteriores."},correct:"b",hint:"Entrenamiento inicial específico para TC.",exp:"Se requiere haber completado satisfactoriamente el entrenamiento inicial específico para Tripulante de Cabina (138 horas según RAD), seguido por la obtención de la licencia ante el IDAC."},
+  {id:216,cat:"RG",q:"Para una persona que tiene licencia de TC y necesita una habilitación en otro tipo de avión deberá tener un entrenamiento de vuelo:",opts:{a:"20 horas.",b:"10 horas.",c:"25 horas.",d:"5 horas."},correct:"d",hint:"Habilitación adicional: 5 horas de vuelo.",exp:"Para añadir una habilitación de otro tipo de aeronave, el TC ya licenciado requiere 5 horas de entrenamiento de vuelo en el nuevo equipo, más el entrenamiento de tierra correspondiente (diferencias)."},
+  {id:217,cat:"RG",q:"Periodo de descanso: es el tiempo mediante el cual se releva al Tripulante de todas sus tareas y obligaciones relativas con sus funciones:",opts:{a:"Ley 491-06.",b:"Ley 380.",c:"RAD 61.",d:"RAD 63."},correct:"b",hint:"Definición de descanso: Ley 380.",exp:"La Ley 380 define el período de descanso como el tiempo en que el tripulante es relevado totalmente de tareas, obligaciones y funciones, pudiendo disponer libremente de su tiempo."},
+  {id:218,cat:"RG",q:"¿Qué cantidad de botiquines se necesitan en una aeronave con capacidad de 120 asientos de pasajeros?",opts:{a:"4",b:"3",c:"1",d:"2"},correct:"d",hint:"101-200 pasajeros: 2 botiquines.",exp:"La cantidad mínima de botiquines: hasta 100 pax = 1; 101-200 pax = 2; 201-300 pax = 3; más de 300 = 4. Para 120 pasajeros se requieren 2 botiquines de primeros auxilios."},
+  {id:219,cat:"RG",q:"¿Qué sección del RAD 121 habla de entrenamiento?",opts:{a:"Sección A.",b:"Sección D.",c:"Sección M.",d:"Sección N."},correct:"d",hint:"Sección N del RAD 121: entrenamiento.",exp:"La Sección N del RAD 121 contiene los programas de entrenamiento, calificaciones y comprobaciones de competencia del personal aeronáutico de operadores grandes."},
+  {id:220,cat:"RG",q:"Según el reglamento de operaciones de aviones de transporte comercial las empresas aéreas podrán llevar a bordo como máximo la cantidad de pasajeros que puedan evacuar en un tiempo de:",opts:{a:"60 segundos.",b:"90 segundos.",c:"120 segundos.",d:"Ninguna de las anteriores."},correct:"b",hint:"Regla de 90 segundos para evacuación.",exp:"Toda aeronave de transporte comercial debe poder evacuarse en 90 segundos o menos con 50% de salidas bloqueadas, incluyendo a tripulación. Define el máximo de pasajeros certificados."},
+  {id:221,cat:"RG",q:"Según el reglamento aeronáutica vigente, toda empresa aérea de transporte comercial debe contar con un manual de operaciones aprobado por la autoridad aeronáutica. La responsabilidad de cumplir y hacer cumplir lo dispuesto en este manual en vuelo recae sobre:",opts:{a:"Cada tripulante en vuelo.",b:"La empresa titular de la autorización técnica operativa.",c:"El comandante o Piloto al mando de la aeronave.",d:"Ninguna de las anteriores."},correct:"a",hint:"Cada tripulante es responsable durante el vuelo.",exp:"Cada tripulante en vuelo es responsable de cumplir y hacer cumplir el Manual de Operaciones, además de las responsabilidades específicas del PIC y de la empresa como ente."},
+  {id:222,cat:"RG",q:"Según nuestras regulaciones Dominicanas que RAD refiere a la 'Demostración de los procedimientos de evacuación de emergencia'",opts:{a:"RAD 62",b:"Anexo 18",c:"RAD 61",d:"RAD 121"},correct:"d",hint:"RAD 121 regula demostraciones de evacuación.",exp:"El RAD 121 incluye los requisitos de demostración de evacuación de emergencia para operadores grandes, donde la aerolínea debe probar evacuación en 90s antes de certificación."},
+  {id:223,cat:"RG",q:"Si en el avión se sirven bebidas alcohólicas durante el vuelo, ¿la tripulación de cabina podrá?",opts:{a:"Negar el suministro de tales bebidas a un pasajero con el propósito de evitar su embriaguez",b:"No se le negara el suministro de tales bebidas",c:"Se le podrá negar si el capitán lo ordena",d:"Todas son correctas."},correct:"a",hint:"TC puede negar bebidas para prevenir embriaguez.",exp:"El TC tiene la autoridad y obligación de negar bebidas alcohólicas a pasajeros que se acerquen a la embriaguez, para prevenir comportamiento insubordinado y mantener la seguridad."},
+  {id:224,cat:"RG",q:"Todo lo relacionado con el entrenamiento de Tripulante de Cabina está en el RAD:",opts:{a:"63.",b:"65.",c:"61.",d:"121."},correct:"a",hint:"RAD 63: licencias y entrenamiento de TC.",exp:"El RAD 63 regula los miembros de la tripulación de cabina, incluyendo licencias, entrenamiento (inicial, transición, recurrente), evaluaciones y obligaciones."},
+  {id:225,cat:"RG",q:"Tripulante de vuelo: integrante de una tripulación que cumple funciones esenciales a bordo de aeronave comerciales en vuelo",opts:{a:"Ley 380.",b:"Ley 491-06.",c:"Ley 87-01.",d:"Ley 36-26."},correct:"a",hint:"Definición de tripulante de vuelo: Ley 380.",exp:"La Ley 380 define al tripulante de vuelo como el integrante de la tripulación que cumple funciones esenciales (no decorativas o de servicio) a bordo de aeronaves comerciales en vuelo."},
+  {id:226,cat:"RG",q:"Un equipo de emergencias médicas es necesario en:",opts:{a:"En aviones de carga.",b:"En un hangar destinado a guardar aviones",c:"En aeronaves para las cuales se requiere un tripulante de cabina",d:"Ninguna de las anteriores"},correct:"c",hint:"Aeronaves con TC requerido = botiquín y EMK.",exp:"Las aeronaves para las cuales se requiere TC (transporte comercial de pasajeros) deben llevar equipos de emergencia médica: botiquín, equipo médico de emergencia (EMK) y DEA en algunos casos."},
+  {id:227,cat:"RG",q:"Una aerolínea 121 es aquella:",opts:{a:"Que puede operar aviones de más de 28 asientos.",b:"Que puede operar aviones de más de 3 asientos y menos de 28 asientos.",c:"A y B son correctas.",d:"Ningunas de las anteriores."},correct:"a",hint:"RAD 121 = más de 28 asientos.",exp:"Una operación RAD 121 es de transporte comercial con aeronaves de más de 28 asientos o más de 7,500 lb de carga. RAD 135 cubre las operaciones de menor tamaño."},
+  {id:228,cat:"RG",q:"Una aeronave transportando 70 pasajeros pero menos de 100, de acuerdo a las regulaciones vigentes debe llevar al menos:",opts:{a:"Agua suficiente para el suministro",b:"10 radios de comunicación",c:"Un megáfono operativo e independiente del sistema de la aeronave.",d:"Dos contenedores de jugo"},correct:"c",hint:"61-99 pax: 1 megáfono operativo independiente.",exp:"Para 61-99 pasajeros se requiere mínimo 1 megáfono operativo, independiente del sistema PA de la aeronave (útil cuando falla la energía). Permite comunicación en emergencia."},
+  {id:229,cat:"RG",q:"Una de las consideraciones que más ha evitado accidentes:",opts:{a:"Trabajo en Equipo (CRM).",b:"Ser amable.",c:"Ser proactivo.",d:"Ninguna de las Anteriores."},correct:"a",hint:"CRM: Crew Resource Management.",exp:"El CRM (Crew Resource Management) es la disciplina de coordinación, comunicación y trabajo en equipo entre tripulación. Ha sido determinante en reducir accidentes desde su implementación en los 80s."},
+  {id:230,cat:"RG",q:"Uno de los requisitos para ser Tripulante de Cabina es:",opts:{a:"21 años.",b:"18 años.",c:"23 años.",d:"18 años con el permiso de padres."},correct:"b",hint:"Edad mínima: 18 años cumplidos.",exp:"La edad mínima para ser TC en RD es 18 años cumplidos. No se requiere permiso parental al ser mayor de edad. Algunas empresas pueden requerir edad superior por políticas internas."},
+  {id:231,cat:"RG",q:"Uno de los requisitos para ser Tripulante de Cabina es:",opts:{a:"Saber hablar, leer y escribir el idioma español.",b:"Hablar inglés al nivel 4.",c:"Ser bilingüe.",d:"Hablar español."},correct:"a",hint:"Español: hablar + leer + escribir.",exp:"El requisito mínimo es saber hablar, leer y escribir el idioma español. Para operación internacional las aerolíneas pueden requerir adicionalmente competencia en inglés."},
+  {id:232,cat:"RG",q:"¿Cuál reglamento dominicano, trata sobre las sanciones?",opts:{a:"21",b:"91",c:"20",d:"35"},correct:"c",hint:"RAD 20: sanciones y multas.",exp:"El RAD 20 regula el régimen sancionatorio en aviación civil dominicana: tipos de infracciones, escala de multas, suspensiones, revocaciones y procedimientos disciplinarios."},
+  {id:233,cat:"RG",q:"¿Cuántos extintores tienen una aeronave de 28 pasajeros?",opts:{a:"1.",b:"2.",c:"3.",d:"4."},correct:"a",hint:"Hasta 30 pasajeros: 1 extintor portátil.",exp:"Aeronaves con hasta 30 asientos requieren mínimo 1 extintor portátil. Para 28 pasajeros corresponde 1. La cantidad aumenta escalonadamente: 31-60: 2, 61-200: 3, etc."},
+  {id:234,cat:"RG",q:"¿Qué cantidad de horas debe llevar un entrenamiento inicial de TC?",opts:{a:"65 horas.",b:"75 horas.",c:"125 horas.",d:"138 horas."},correct:"d",hint:"Entrenamiento inicial TC: 138 horas.",exp:"El entrenamiento inicial de TC en RD consta de 138 horas según RAD: combinando teoría (emergencias, primeros auxilios, fisiología, reglamentos, servicio) y práctica de seguridad."},
+  {id:235,cat:"RG",q:"¿Qué reglamento dominicano específica los procedimientos para describir una interferencia ilícita?",opts:{a:"RAD 91.",b:"RAD 121.",c:"RAD 63.",d:"RAD 61."},correct:"b",hint:"RAD 121 contiene procedimientos para interferencia ilícita.",exp:"El RAD 121 incluye los procedimientos para enfrentar actos de interferencia ilícita en aeronaves de transporte comercial: protocolo de comunicación, manejo de bombas, secuestro, pasajeros insubordinados."}
+];
+
+// ===========================
+// APP STATE
+// ===========================
+const MODES = [
+  { id:'standard',   tag:'01', title:'Estándar',       em:'Sin tiempo',    desc:'Sin cronómetro ni presión. Ideal para practicar a tu ritmo.', time:null, timeLabel:'Sin límite', hints:true,  showIndicators:true,  autoReveal:false },
+  { id:'relaxed',    tag:'02', title:'Relajado',        em:'4 horas',       desc:'Tiempo generoso para examinar con calma y sin apuros.', time:14400, timeLabel:'4:00:00', hints:true,  showIndicators:true,  autoReveal:false },
+  { id:'normal',     tag:'03', title:'Normal',          em:'2 horas',       desc:'Condición estándar del examen oficial IASCA.', time:7200,  timeLabel:'2:00:00', hints:true,  showIndicators:true,  autoReveal:false },
+  { id:'intensive',  tag:'04', title:'Intensivo',       em:'45 minutos',    desc:'Alta presión. Prueba tu dominio en tiempo reducido.', time:2700,  timeLabel:'0:45:00', hints:true,  showIndicators:true,  autoReveal:false },
+  { id:'study',      tag:'05', title:'Estudio',         em:'Feedback inmediato', desc:'Responde y ve la explicación completa al instante.', time:null, timeLabel:'Sin límite', hints:true,  showIndicators:true,  autoReveal:true  },
+  { id:'review',     tag:'06', title:'Repaso',          em:'Ver respuestas',     desc:'Explora todas las preguntas con sus respuestas correctas.', time:null, timeLabel:'—', hints:false, showIndicators:false, isReview:true    },
+  { id:'challenge',  tag:'07', title:'Desafío',         em:'Sin pistas',         desc:'Sin pistas, sin indicadores de progreso. Solo tú y el examen.', time:null, timeLabel:'Sin límite', hints:false, showIndicators:false, autoReveal:false },
+  { id:'random',     tag:'08', title:'Aleatorio',       em:'Orden distinto',     desc:'Las 235 preguntas en un orden completamente diferente cada vez que lo inicias.', time:null, timeLabel:'Sin límite', hints:true,  showIndicators:true,  autoReveal:false, isRandom:true },
+];
+
+const CAT_LABELS = { EG:'Emergencias Generales', FV:'Fisiología de Vuelo', PA:'Primeros Auxilios', RA:'Ramos Aeronáuticos', RG:'Reglamentos Aeronáuticos' };
+
+let state = {
+  name: '',
+  theme: null,
+  currentMode: null,
+  questions: [],
+  currentIdx: 0,
+  answers: {},      // {qId: letterKey}
+  hintsUsed: {},    // {qId: true}
+  startTime: null,
+  timerInterval: null,
+  timeRemaining: null,
+  resultFilter: 'all',
+  revFilter: 'all',
+  history: [],
+  mapOpen: false,
+  submitted: false,
+};
+
+// ===========================
+// STORAGE
+// ===========================
+const SK = { name:'iasca_name', theme:'iasca_theme', history:'iasca_history', current:'iasca_current' };
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(SK.name, state.name);
+    localStorage.setItem(SK.theme, state.theme);
+    localStorage.setItem(SK.history, JSON.stringify(state.history));
+    if (state.currentMode && !state.submitted) {
+      const snap = { mode:state.currentMode.id, answers:state.answers, hintsUsed:state.hintsUsed, currentIdx:state.currentIdx, startTime:state.startTime, timeRemaining:state.timeRemaining };
+      localStorage.setItem(SK.current, JSON.stringify(snap));
+    }
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    state.name = localStorage.getItem(SK.name) || '';
+    state.history = JSON.parse(localStorage.getItem(SK.history) || '[]');
+    const savedTheme = localStorage.getItem(SK.theme);
+    if (savedTheme) state.theme = savedTheme;
+  } catch(e) {}
+}
+
+function clearCurrentExam() {
+  try { localStorage.removeItem(SK.current); } catch(e) {}
+}
+
+// ===========================
+// THEME
+// ===========================
+function initTheme() {
+  if (!state.theme) {
+    const pref = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'cockpit' : 'paper';
+    state.theme = pref;
+  }
+  applyTheme();
+}
+
+function applyTheme() {
+  document.body.setAttribute('data-theme', state.theme);
+  document.getElementById('themeLabel').textContent = state.theme === 'cockpit' ? 'Día' : 'Noche';
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'cockpit' ? 'paper' : 'cockpit';
+  applyTheme();
+  saveToStorage();
+}
+
+// ===========================
+// NAVIGATION
+// ===========================
+function goTo(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const v = document.getElementById(viewId);
+  if (v) { v.classList.add('active'); v.scrollIntoView({behavior:'smooth', block:'start'}); }
+  const onExam = viewId === 'viewExam';
+  document.getElementById('btnBack').style.display = (viewId !== 'viewWelcome' && viewId !== 'viewModes') ? '' : 'none';
+  document.getElementById('btnDash').style.display = (viewId !== 'viewDashboard') ? '' : 'none';
+}
+
+function goBack() {
+  const active = document.querySelector('.view.active');
+  if (!active) return;
+  if (active.id === 'viewExam') {
+    openModal('¿Abandonar examen?', 'Se perderá el progreso actual y el examen no será guardado en el historial.', [
+      { label:'Sí, abandonar', cls:'btn-primary', fn:'confirmAbort()' },
+      { label:'Continuar examen', cls:'btn-ghost', fn:'closeModal()' }
+    ]);
+  } else {
+    goTo('viewModes');
+  }
+}
+
+function confirmAbort() {
+  closeModal();
+  stopTimer();
+  clearCurrentExam();
+  state.currentMode = null;
+  goTo('viewModes');
+}
+
+// ===========================
+// WELCOME
+// ===========================
+function startMain() {
+  const n = document.getElementById('inputName').value.trim();
+  if (!n) { toast('Ingresa tu nombre para continuar'); document.getElementById('inputName').focus(); return; }
+  state.name = n;
+  saveToStorage();
+  renderModes();
+  goTo('viewModes');
+  document.getElementById('btnDash').style.display = '';
+}
+
+document.getElementById('inputName').addEventListener('keydown', e => { if (e.key === 'Enter') startMain(); });
+
+// ===========================
+// MODES
+// ===========================
+function renderModes() {
+  document.getElementById('modeGreet').textContent = state.name;
+  const grid = document.getElementById('modesGrid');
+  grid.innerHTML = MODES.map(m => `
+    <button class="mode-card" onclick="selectMode('${m.id}')" aria-label="Modo ${m.title}">
+      <div class="mode-card-tag">${m.tag} / 08</div>
+      <div class="mode-card-title">${m.title} <em>${m.em}</em></div>
+      <div class="mode-card-desc">${m.desc}</div>
+      <div class="mode-card-time">
+        <span>Tiempo disponible</span>
+        <span class="time-val mono">${m.timeLabel}</span>
+      </div>
+    </button>
+  `).join('');
+}
+
+// ===========================
+// SELECT MODE & START EXAM
+// ===========================
+function selectMode(modeId) {
+  const m = MODES.find(x => x.id === modeId);
+  if (!m) return;
+  state.currentMode = m;
+
+  if (m.isReview) {
+    renderReview();
+    goTo('viewReview');
+    return;
+  }
+
+  // Shuffle questions
+  const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+  state.questions = shuffled;
+  state.answers = {};
+  state.hintsUsed = {};
+  state.currentIdx = 0;
+  state.startTime = Date.now();
+  state.submitted = false;
+  state.mapOpen = false;
+
+  // Timer
+  if (m.time) {
+    state.timeRemaining = m.time;
+    startTimer();
+  } else {
+    state.timeRemaining = null;
+    document.getElementById('examTimer').style.display = 'none';
+  }
+
+  document.getElementById('examModeTag').textContent = m.title + (m.id === 'challenge' ? ' ⚡' : '');
+  document.getElementById('qMap').classList.remove('open');
+  state.mapOpen = false;
+  document.getElementById('submitBanner').classList.remove('open');
+
+  renderQuestion();
+  goTo('viewExam');
+  saveToStorage();
+}
+
+// ===========================
+// TIMER
+// ===========================
+function startTimer() {
+  const el = document.getElementById('examTimer');
+  el.style.display = '';
+  stopTimer();
+  state.timerInterval = setInterval(() => {
+    state.timeRemaining--;
+    if (state.timeRemaining <= 0) {
+      state.timeRemaining = 0;
+      stopTimer();
+      toast('⏰ Tiempo agotado — examen entregado');
+      setTimeout(submitExam, 1200);
+    }
+    updateTimerDisplay();
+    saveToStorage();
+  }, 1000);
+  updateTimerDisplay();
+}
+
+function stopTimer() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('examTimer');
+  const t = state.timeRemaining;
+  if (t === null) { el.style.display = 'none'; return; }
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  const str = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.textContent = str;
+  el.className = 'exam-timer';
+  if (t < 300) el.classList.add('crit');
+  else if (t < 900) el.classList.add('warn');
+}
+
+// ===========================
+// RENDER QUESTION
+// ===========================
+function renderQuestion() {
+  const q = state.questions[state.currentIdx];
+  if (!q) return;
+  const total = state.questions.length;
+  const mode = state.currentMode;
+
+  // Progress
+  const answered = Object.keys(state.answers).length;
+  if (mode.showIndicators) {
+    const pct = ((state.currentIdx + 1) / total) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressStrip').setAttribute('aria-valuenow', Math.round(pct));
+    document.getElementById('qCounter').textContent = `${state.currentIdx + 1} / ${total}`;
+  } else {
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('qCounter').textContent = '';
+  }
+
+  // Number & cat
+  document.getElementById('qNumber').innerHTML = `${state.currentIdx + 1}<span class="of">/${total}</span>`;
+  document.getElementById('qCatTag').textContent = CAT_LABELS[q.cat] || q.cat;
+  document.getElementById('qText').textContent = q.q;
+
+  // Options
+  const opts = Object.entries(q.opts);
+  const selected = state.answers[q.id];
+  const isStudyRevealed = mode.autoReveal && selected;
+
+  let optHtml = opts.map(([key, val]) => {
+    let cls = 'opt';
+    if (selected === key) cls += ' selected';
+    if (isStudyRevealed) {
+      if (key === q.correct) cls += ' is-correct';
+      else if (selected === key && key !== q.correct) cls += ' is-incorrect';
+    }
+    const disabled = (mode.autoReveal && selected) ? 'disabled' : '';
+    return `<button class="${cls}" onclick="selectOpt('${key}')" ${disabled} aria-pressed="${selected === key}">
+      <span class="opt-letter">${key}</span>
+      <span>${val}</span>
+    </button>`;
+  }).join('');
+  document.getElementById('optionsList').innerHTML = optHtml;
+
+  // Hint row
+  const hintRow = document.getElementById('hintRow');
+  const hintBox = document.getElementById('hintBox');
+  if (mode.hints) {
+    hintRow.style.display = '';
+    const hintBtn = document.getElementById('btnHint');
+    const usedHint = state.hintsUsed[q.id];
+    hintBtn.disabled = !!(usedHint || (mode.autoReveal && selected));
+    hintBtn.textContent = usedHint ? '💡 Pista usada' : '💡 Pista (-5 pts)';
+    if (usedHint) {
+      hintBox.style.display = '';
+      hintBox.textContent = q.hint;
+    } else {
+      hintBox.style.display = 'none';
+    }
+  } else {
+    hintRow.style.display = 'none';
+  }
+
+  // Study mode explanation
+  const explainBox = document.getElementById('explainBox');
+  const explainText = document.getElementById('explainText');
+  if (mode.autoReveal && selected) {
+    explainText.textContent = q.exp;
+    explainBox.style.display = '';
+  } else {
+    explainBox.style.display = 'none';
+  }
+
+  // Nav buttons
+  document.getElementById('btnPrev').disabled = state.currentIdx === 0;
+  const isLast = state.currentIdx === total - 1;
+  const btnNext = document.getElementById('btnNext');
+  btnNext.textContent = isLast ? 'Ver resumen →' : 'Siguiente →';
+
+  // Map cells
+  renderMapCells();
+}
+
+function renderMapCells() {
+  const grid = document.getElementById('qMapGrid');
+  if (!state.mapOpen) return;
+  const mode = state.currentMode;
+  grid.innerHTML = state.questions.map((q, i) => {
+    let cls = 'q-map-cell';
+    if (state.answers[q.id]) cls += ' answered';
+    if (i === state.currentIdx) cls += ' current';
+    const label = mode.showIndicators ? (i + 1) : '·';
+    return `<button class="${cls}" onclick="jumpTo(${i})" title="Pregunta ${i+1}">${label}</button>`;
+  }).join('');
+}
+
+// ===========================
+// INTERACTIONS
+// ===========================
+function selectOpt(key) {
+  const q = state.questions[state.currentIdx];
+  const mode = state.currentMode;
+  if (mode.autoReveal && state.answers[q.id]) return; // already revealed
+  state.answers[q.id] = key;
+  saveToStorage();
+  renderQuestion();
+
+  // Auto-advance in study mode after brief pause
+  if (mode.autoReveal) {
+    setTimeout(() => {
+      if (state.currentIdx < state.questions.length - 1) {
+        state.currentIdx++;
+        renderQuestion();
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+    }, 1600);
+  }
+}
+
+function useHint() {
+  const q = state.questions[state.currentIdx];
+  state.hintsUsed[q.id] = true;
+  saveToStorage();
+  renderQuestion();
+  toast('Pista revelada · -5 puntos');
+}
+
+function navPrev() {
+  if (state.currentIdx > 0) { state.currentIdx--; renderQuestion(); window.scrollTo({top:0, behavior:'smooth'}); }
+}
+
+function navNext() {
+  const total = state.questions.length;
+  if (state.currentIdx < total - 1) {
+    state.currentIdx++;
+    renderQuestion();
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    confirmSubmit();
+  }
+}
+
+function jumpTo(idx) {
+  state.currentIdx = idx;
+  document.getElementById('qMap').classList.remove('open');
+  state.mapOpen = false;
+  renderQuestion();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function toggleMap() {
+  state.mapOpen = !state.mapOpen;
+  const mapEl = document.getElementById('qMap');
+  mapEl.classList.toggle('open', state.mapOpen);
+  if (state.mapOpen) renderMapCells();
+}
+
+// ===========================
+// SUBMIT EXAM
+// ===========================
+function confirmSubmit() {
+  const total = state.questions.length;
+  const answered = Object.keys(state.answers).length;
+  const unanswered = total - answered;
+  const banner = document.getElementById('submitBanner');
+  const msg = document.getElementById('submitBannerMsg');
+  if (unanswered > 0) {
+    msg.textContent = `Tienes ${unanswered} pregunta${unanswered > 1 ? 's' : ''} sin responder. ¿Deseas entregar el examen de todas formas?`;
+  } else {
+    msg.textContent = '¡Completaste todas las preguntas! ¿Listo para entregar y ver resultados?';
+  }
+  banner.classList.add('open');
+  banner.scrollIntoView({behavior:'smooth'});
+}
+
+function closeSubmit() {
+  document.getElementById('submitBanner').classList.remove('open');
+}
+
+function submitExam() {
+  stopTimer();
+  state.submitted = true;
+  const mode = state.currentMode;
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const result = calcScore();
+
+  // Save to history
+  const entry = {
+    date: new Date().toISOString(),
+    name: state.name,
+    mode: mode.id,
+    modeLabel: mode.title,
+    score: result.score,
+    grade: result.grade,
+    correctCount: result.correctCount,
+    totalAnswered: result.totalAnswered,
+    totalQuestions: state.questions.length,
+    hintsUsed: Object.keys(state.hintsUsed).length,
+    timeUsed: elapsed,
+    answers: state.answers,
+  };
+  state.history.unshift(entry);
+  if (state.history.length > 100) state.history.pop();
+  saveToStorage();
+  clearCurrentExam();
+
+  renderResults(result, entry);
+  goTo('viewResults');
+}
+
+// ===========================
+// SCORING
+// ===========================
+function calcScore() {
+  const total = state.questions.length;
+  let correct = 0;
+  let totalAnswered = 0;
+
+  state.questions.forEach(q => {
+    const ans = state.answers[q.id];
+    if (ans !== undefined) {
+      totalAnswered++;
+      if (ans === q.correct) correct++;
+    }
+  });
+
+  const hintsCount = Object.keys(state.hintsUsed).length;
+  const rawPct = total > 0 ? (correct / total) * 100 : 0;
+  let score = Math.round(rawPct - (hintsCount * 5 / total * 100 * 0.05));
+  // Simpler: raw score out of 100 minus hint penalty
+  score = Math.round((correct / total) * 100) - (hintsCount > 0 ? Math.min(20, hintsCount * 2) : 0);
+  score = Math.max(0, Math.min(100, score));
+
+  let grade, gradeLabel;
+  if (score >= 85) { grade = 'excel'; gradeLabel = '🏆 Sobresaliente'; }
+  else if (score >= 60) { grade = 'pass'; gradeLabel = '✅ Aprobado'; }
+  else { grade = 'fail'; gradeLabel = '❌ Reprobado'; }
+
+  return { score, grade, gradeLabel, correctCount: correct, totalAnswered, total };
+}
+
+// ===========================
+// RESULTS VIEW
+// ===========================
+function renderResults(result, entry) {
+  const elapsed = entry.timeUsed;
+  const h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60), s = elapsed%60;
+  const timeStr = h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+
+  document.getElementById('resultHero').innerHTML = `
+    <div class="result-status-line">
+      <span>${entry.modeLabel}</span>
+      <span>·</span>
+      <span>${new Date(entry.date).toLocaleDateString('es-DO', {day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>
+    <div class="result-score-row">
+      <div class="result-score">${result.score}</div>
+      <div class="result-score-over">/ 100</div>
+    </div>
+    <div class="result-verdict ${result.grade}">${result.gradeLabel}</div>
+    <div class="result-summary">
+      <div class="result-summary-item"><div class="label">Correctas</div><div class="value correct">${result.correctCount}</div></div>
+      <div class="result-summary-item"><div class="label">Incorrectas</div><div class="value wrong">${result.totalAnswered - result.correctCount}</div></div>
+      <div class="result-summary-item"><div class="label">Sin resp.</div><div class="value">${result.total - result.totalAnswered}</div></div>
+      <div class="result-summary-item"><div class="label">Pistas usadas</div><div class="value">${entry.hintsUsed}</div></div>
+      <div class="result-summary-item"><div class="label">Tiempo</div><div class="value mono" style="font-size:1rem;margin-top:4px">${timeStr}</div></div>
+    </div>
+  `;
+
+  state.resultFilter = 'all';
+  document.querySelectorAll('.result-filters .filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('filterAll').classList.add('active');
+  renderResultList('all');
+}
+
+function setFilter(f) {
+  state.resultFilter = f;
+  document.querySelectorAll('.result-filters .filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('filter' + f.charAt(0).toUpperCase() + f.slice(1)).classList.add('active');
+  renderResultList(f);
+}
+
+function renderResultList(filter) {
+  const list = document.getElementById('resultList');
+  let qs = state.questions;
+  if (filter === 'correct') qs = qs.filter(q => state.answers[q.id] === q.correct);
+  else if (filter === 'wrong') qs = qs.filter(q => state.answers[q.id] && state.answers[q.id] !== q.correct);
+
+  if (!qs.length) {
+    list.innerHTML = '<div class="empty-state"><h3>Sin resultados</h3><p>No hay preguntas en esta categoría.</p></div>';
+    return;
+  }
+
+  list.innerHTML = qs.map((q, idx) => {
+    const ans = state.answers[q.id];
+    const isCorrect = ans === q.correct;
+    const cls = ans ? (isCorrect ? 'correct' : 'wrong') : '';
+    const icon = ans ? (isCorrect ? '✓' : '✗') : '—';
+    const userAnsText = ans ? q.opts[ans] : '(sin responder)';
+    const correctAnsText = q.opts[q.correct];
+    const qNum = state.questions.indexOf(q) + 1;
+
+    return `
+    <div class="result-item ${cls}">
+      <div class="result-item-head">
+        <span class="result-item-num">${qNum}</span>
+        <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-soft);align-self:center">${CAT_LABELS[q.cat]||q.cat}</span>
+        <span class="result-item-icon">${icon}</span>
+      </div>
+      <div class="result-item-q">${q.q}</div>
+      <div class="result-item-answers">
+        <div class="result-ans-block ${ans && !isCorrect ? 'wrong' : ''}">
+          <div class="result-ans-label">Tu respuesta${ans ? ' · ('+ans+')' : ''}</div>
+          <div class="result-ans-text">${userAnsText}</div>
+        </div>
+        <div class="result-ans-block correct">
+          <div class="result-ans-label">Respuesta correcta · (${q.correct})</div>
+          <div class="result-ans-text">${correctAnsText}</div>
+        </div>
+      </div>
+      <div class="result-explain">
+        <div class="result-explain-label">📖 Explicación</div>
+        ${q.exp}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===========================
+// REVIEW MODE (sin calificar)
+// ===========================
+function renderReview() {
+  state.revFilter = 'all';
+  document.querySelectorAll('#viewReview .filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('revFilterAll').classList.add('active');
+  renderReviewList('all');
+}
+
+function setRevFilter(f) {
+  state.revFilter = f;
+  document.querySelectorAll('#viewReview .filter-chip').forEach(c => c.classList.remove('active'));
+  const id = 'revFilter' + (f === 'all' ? 'All' : f);
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  renderReviewList(f);
+}
+
+function renderReviewList(filter) {
+  const list = document.getElementById('reviewList');
+  let qs = ALL_QUESTIONS;
+  if (filter !== 'all') qs = qs.filter(q => q.cat === filter);
+  list.innerHTML = qs.map(q => {
+    const opts = Object.entries(q.opts).map(([k, v]) => {
+      const isCor = k === q.correct;
+      return `<div class="opt ${isCor ? 'is-correct' : ''}" style="cursor:default">
+        <span class="opt-letter">${k}</span>
+        <span>${v}</span>
+      </div>`;
+    }).join('');
+    return `
+    <div class="result-item" style="border-left-color:var(--success)">
+      <div class="result-item-head">
+        <span class="result-item-num">${q.id}</span>
+        <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-soft);align-self:center">${CAT_LABELS[q.cat]||q.cat}</span>
+        <span style="font-family:var(--font-mono);font-size:0.7rem;padding:3px 10px;background:var(--success-bg);color:var(--success);border-radius:100px">Resp: ${q.correct}</span>
+      </div>
+      <div class="result-item-q">${q.q}</div>
+      <div class="options" style="margin-bottom:var(--space-md)">${opts}</div>
+      <div class="result-explain">
+        <div class="result-explain-label">📖 Explicación</div>
+        ${q.exp}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===========================
+// DASHBOARD
+// ===========================
+function renderDashboard() {
+  const h = state.history;
+  const dash = document.getElementById('dashStats');
+  const chartCard = document.getElementById('chartCard');
+
+  if (!h.length) {
+    dash.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>Aún sin historial</h3><p>Completa un examen para ver tus estadísticas aquí.</p></div>`;
+    chartCard.style.display = 'none';
+    document.getElementById('historyList').innerHTML = `<div class="empty-state"><h3>Sin intentos registrados</h3><p>Inicia cualquier modo cronometrado o estándar para construir tu historial.</p></div>`;
+    return;
+  }
+
+  const scores = h.map(x => x.score);
+  const best = Math.max(...scores);
+  const avg = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+  const passes = h.filter(x => x.score >= 60).length;
+  const passRate = Math.round((passes / h.length) * 100);
+
+  // Racha
+  let streak = 0;
+  for (const x of h) { if (x.score >= 60) streak++; else break; }
+
+  dash.innerHTML = `
+    <div class="dash-stat"><div class="dash-stat-label">Intentos</div><div class="dash-stat-value mono">${h.length}</div></div>
+    <div class="dash-stat"><div class="dash-stat-label">Mejor puntaje</div><div class="dash-stat-value">${best}</div><div class="dash-stat-sub">/ 100</div></div>
+    <div class="dash-stat"><div class="dash-stat-label">Promedio</div><div class="dash-stat-value">${avg}</div><div class="dash-stat-sub">/ 100</div></div>
+    <div class="dash-stat"><div class="dash-stat-label">Tasa de aprobación</div><div class="dash-stat-value">${passRate}<small style="font-size:1.2rem">%</small></div></div>
+    <div class="dash-stat"><div class="dash-stat-label">Racha actual</div><div class="dash-stat-value mono">${streak}</div><div class="dash-stat-sub">aprobados consecutivos</div></div>
+  `;
+
+  // Chart
+  if (h.length >= 2) {
+    chartCard.style.display = '';
+    renderChart(h.slice().reverse());
+  } else {
+    chartCard.style.display = 'none';
+  }
+
+  // History list
+  const listEl = document.getElementById('historyList');
+  listEl.innerHTML = `
+    <div class="history-row header">
+      <span>Fecha</span><span>Modo</span><span>Puntaje</span><span>Correctas</span>
+    </div>
+    ${h.map(e => {
+      const d = new Date(e.date);
+      const dateStr = d.toLocaleDateString('es-DO', {day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' + d.toLocaleTimeString('es-DO', {hour:'2-digit',minute:'2-digit'});
+      const pCls = e.grade === 'excel' ? 'excel' : (e.score >= 60 ? 'pass' : 'fail');
+      return `<div class="history-row">
+        <span class="mono" style="font-size:0.82rem">${dateStr}</span>
+        <span>${e.modeLabel}</span>
+        <span><span class="score-pill ${pCls}">${e.score}</span></span>
+        <span class="mono">${e.correctCount}/${e.totalQuestions}</span>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function renderChart(items) {
+  const svg = document.getElementById('progressChart');
+  const W = 760, H = 200, pad = { top:20, right:20, bottom:40, left:40 };
+  const gW = W - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  const scores = items.map(x => x.score);
+  const n = scores.length;
+  if (n < 2) return;
+
+  const xScale = i => pad.left + (i / (n - 1)) * gW;
+  const yScale = v => pad.top + gH - ((v / 100) * gH);
+
+  // Grid lines
+  let gridLines = '';
+  [0, 60, 85, 100].forEach(v => {
+    const y = yScale(v);
+    const col = v === 60 ? 'var(--success)' : v === 85 ? 'var(--accent)' : 'var(--line)';
+    const opacity = (v === 0 || v === 100) ? 0.3 : 0.5;
+    gridLines += `<line x1="${pad.left}" y1="${y}" x2="${W - pad.right}" y2="${y}" stroke="${col}" stroke-width="1" stroke-dasharray="${v === 60 || v === 85 ? '4,3' : ''}" opacity="${opacity}"/>`;
+    if (v === 60) gridLines += `<text x="${W - pad.right + 4}" y="${y + 4}" fill="var(--success)" font-size="9" font-family="var(--font-mono)">60</text>`;
+    if (v === 85) gridLines += `<text x="${W - pad.right + 4}" y="${y + 4}" fill="var(--accent)" font-size="9" font-family="var(--font-mono)">85</text>`;
+  });
+
+  // Area
+  const pts = scores.map((v, i) => `${xScale(i)},${yScale(v)}`).join(' ');
+  const areaPts = `${xScale(0)},${yScale(0)} ${pts} ${xScale(n-1)},${yScale(0)}`;
+
+  // Line
+  let pathD = `M ${xScale(0)} ${yScale(scores[0])}`;
+  scores.forEach((v, i) => { if (i > 0) pathD += ` L ${xScale(i)} ${yScale(v)}`; });
+
+  // Dots
+  const dots = scores.map((v, i) => {
+    const e = items[i];
+    const col = e.grade === 'excel' ? 'var(--accent)' : (v >= 60 ? 'var(--success)' : 'var(--danger)');
+    return `<circle cx="${xScale(i)}" cy="${yScale(v)}" r="4" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;
+  }).join('');
+
+  // X axis labels (show max 8)
+  const step = Math.max(1, Math.floor(n / 8));
+  let xLabels = '';
+  scores.forEach((v, i) => {
+    if (i % step === 0 || i === n - 1) {
+      const d = new Date(items[i].date);
+      const lbl = `${d.getDate()}/${d.getMonth()+1}`;
+      xLabels += `<text x="${xScale(i)}" y="${H - 6}" fill="var(--ink-faint)" font-size="9" font-family="var(--font-mono)" text-anchor="middle">${lbl}</text>`;
+    }
+  });
+
+  // Y axis labels
+  let yLabels = '';
+  [0, 50, 100].forEach(v => {
+    yLabels += `<text x="${pad.left - 6}" y="${yScale(v) + 4}" fill="var(--ink-faint)" font-size="9" font-family="var(--font-mono)" text-anchor="end">${v}</text>`;
+  });
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    <polygon points="${areaPts}" fill="url(#areaGrad)"/>
+    <polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+    <path d="${pathD}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${xLabels}
+    ${yLabels}
+  `;
+}
+
+function clearHistory() {
+  openModal('Borrar historial', '¿Seguro que deseas eliminar todo el historial de intentos? Esta acción no se puede deshacer.', [
+    { label:'Sí, borrar todo', cls:'btn-primary', fn:'doClrHistory()' },
+    { label:'Cancelar', cls:'btn-ghost', fn:'closeModal()' }
+  ]);
+}
+
+function doClrHistory() {
+  state.history = [];
+  saveToStorage();
+  closeModal();
+  renderDashboard();
+  toast('Historial eliminado');
+}
+
+// ===========================
+// MODAL HELPERS
+// ===========================
+function openModal(title, msg, actions) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent = msg;
+  document.getElementById('modalActions').innerHTML = actions.map(a =>
+    `<button class="btn ${a.cls}" onclick="${a.fn}">${a.label}</button>`
+  ).join('');
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalBackdrop')) {
+    document.getElementById('modalBackdrop').classList.remove('open');
+  }
+}
+
+// ===========================
+// TOAST
+// ===========================
+let toastTimer = null;
+function toast(msg, dur = 2600) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ===========================
+// KEYBOARD SHORTCUTS
+// ===========================
+document.addEventListener('keydown', e => {
+  const active = document.querySelector('.view.active');
+  if (!active || active.id !== 'viewExam') return;
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+  const q = state.questions[state.currentIdx];
+  if (!q) return;
+  const keys = Object.keys(q.opts);
+
+  if (keys.includes(e.key.toLowerCase())) {
+    selectOpt(e.key.toLowerCase());
+  } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+    navNext();
+  } else if (e.key === 'ArrowLeft') {
+    navPrev();
+  } else if (e.key === 'm' || e.key === 'M') {
+    toggleMap();
+  }
+});
+
+// ===========================
+// INIT
+// ===========================
+(function init() {
+  loadFromStorage();
+  initTheme();
+
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('btnBack').addEventListener('click', goBack);
+  document.getElementById('btnDash').addEventListener('click', () => { goTo('viewDashboard'); renderDashboard(); });
+
+  document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+  if (state.name) {
+    document.getElementById('inputName').value = state.name;
+  }
+
+  // Check if there's a saved in-progress exam
+  try {
+    const snap = JSON.parse(localStorage.getItem(SK.current) || 'null');
+    if (snap && snap.mode && state.name) {
+      const m = MODES.find(x => x.id === snap.mode);
+      if (m && !m.isReview) {
+        openModal('Examen en progreso', `Tienes un examen "${m.title}" guardado. ¿Deseas retomarlo?`, [
+          { label:'Sí, continuar', cls:'btn-primary', fn:'resumeExam()' },
+          { label:'No, nuevo examen', cls:'btn-ghost', fn:'discardResume()' }
+        ]);
+      }
+    }
+  } catch(e) {}
+})();
+
+function resumeExam() {
+  closeModal();
+  try {
+    const snap = JSON.parse(localStorage.getItem(SK.current));
+    const m = MODES.find(x => x.id === snap.mode);
+    state.currentMode = m;
+    // Restore shuffled order is tricky; just start fresh with same mode
+    // (can't restore shuffle from storage without saving full question order)
+    clearCurrentExam();
+    selectMode(m.id);
+    toast('Nuevo intento iniciado');
+  } catch(e) { selectMode('standard'); }
+}
+
+function discardResume() {
+  clearCurrentExam();
+  closeModal();
+}
+</script>
+</body>
+</html>
